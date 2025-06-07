@@ -3,274 +3,344 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pragmatic Play Slot Win Rates</title>
+  <title>Multi‑Provider Slot Win Rate Tracker</title>
   <style>
     body {
+      font-family: sans-serif;
       background: #111;
       color: #fff;
-      font-family: Arial, sans-serif;
-      margin: 0; padding: 20px;
-    }
-    h1 {
-      color: #ffcc00;
       text-align: center;
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
     }
-    #search {
-      display: block;
-      margin: 0 auto 20px;
+    h1 { color: #ffcc00; margin-bottom: 10px; }
+    input {
       padding: 10px;
-      width: 300px;
-      border-radius: 6px;
+      width: 90%;
+      max-width: 400px;
+      margin-bottom: 10px;
       border: none;
+      border-radius: 6px;
       font-size: 16px;
     }
-    #toggleBtn {
-      display: block;
-      margin: 0 auto 30px;
-      background: #ffcc00;
+    button {
+      padding: 8px 16px;
+      font-size: 14px;
       border: none;
-      padding: 10px 20px;
-      font-weight: bold;
+      border-radius: 6px;
+      background: #ffcc00;
       color: #111;
       cursor: pointer;
-      border-radius: 6px;
+      margin-bottom: 15px;
     }
+    button:hover { background: #e6b800; }
+    .info { font-size: 12px; color: #aaa; margin-bottom: 20px; }
     .slot-card {
       background: #222;
-      border-radius: 8px;
-      margin-bottom: 20px;
+      margin: 15px auto;
       padding: 15px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      box-shadow: 0 0 15px rgba(255,204,0,0.3);
-      max-width: 400px;
-      margin-left: auto;
-      margin-right: auto;
+      width: 90%;
+      max-width: 500px;
+      border: 1px solid #444;
+      border-radius: 10px;
+      text-align: left;
     }
-    .slot-title {
-      font-size: 1.2em;
-      margin: 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .progress-bar {
+      height: 14px;
+      background: #444;
+      border-radius: 7px;
+      overflow: hidden;
+      margin-top: 5px;
+      width: 100%;
+    }
+    .fill {
+      height: 100%;
+      background: #00cc66;
+      transition: width 1s ease;
     }
     .winrate {
-      color: #ffcc00;
       font-weight: bold;
-    }
-    .advice {
-      font-weight: bold;
-      font-size: 0.9em;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .advice.good {
-      color: #0f0;
-    }
-    .advice.wait {
-      color: #ffa500;
-    }
-    .advice.bad {
-      color: #f55;
-    }
-    canvas {
-      width: 100% !important;
-      height: 120px !important;
-      background: #111;
-      border-radius: 6px;
-      box-shadow: inset 0 0 10px rgba(255,204,0,0.3);
+      margin-bottom: 6px;
     }
     .spin-type {
       font-style: italic;
-      font-size: 0.9em;
-      text-align: right;
+      color: #ffd966;
+      margin-top: 6px;
     }
+    .prediction {
+      margin-top: 10px;
+      font-weight: bold;
+      font-size: 16px;
+      color: #00ccff;
+    }
+    .recommended-bet {
+      margin-top: 8px;
+      font-weight: bold;
+      font-size: 15px;
+      color: #ffcc00;
+    }
+    .advice { margin-top: 10px; font-weight: bold; }
+    .good { color: #0f0; }
+    .wait { color: #f55; }
+    canvas {
+      margin-top: 15px;
+      background: #111;
+      border-radius: 6px;
+      width: 100% !important;
+      height: 120px !important;
+    }
+    .updated-time { font-size: 14px; color: #ccc; margin-bottom: 10px; }
   </style>
 </head>
 <body>
-  <h1>🔥 Pragmatic Play Slot Win Rates 🔥</h1>
-  <input type="search" id="search" placeholder="Search slots..." aria-label="Search slots" />
-  <button id="toggleBtn">Pause Updates ⏸️</button>
+  <h1>🎰 Multi‑Provider Slot Win Rate Tracker</h1>
+  <input type="text" id="searchInput" placeholder="Search slots..." />
+  <br/>
+  <button id="toggleUpdatesBtn">Pause Updates ⏸️</button>
+  <div class="updated-time" id="lastUpdated">Last updated: --:--:--</div>
+  <div class="info">ℹ️ Win rates update every 30 seconds. Data is simulated.</div>
   <div id="slotsContainer"></div>
 
-  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    // Sample slots list — you can replace or expand this
-    const slots = [
-      "Sweet Bonanza",
-      "Gates of Olympus",
-      "Starlight Princess",
-      "Big Bass Bonanza",
-      "Wild West Gold",
-      "Fruit Party",
-      "The Dog House",
-      "Release the Kraken",
-      "John Hunter and the Tomb of the Scarab Queen",
-      "Great Rhino"
-    ];
+    const providers = {
+      "Pragmatic Play": [
+        "Sweet Bonanza",
+        "Sugar Rush",
+        "Gates of Olympus",
+        "Starlight Princess",
+        "Big Bass Splash",
+        "Fruit Party",
+        "Wild West Gold",
+        "The Dog House",
+        "Power of Thor Megaways",
+        "Joker’s Jewels",
+        "Floating Dragon",
+        "Madame Destiny Megaways",
+        "John Hunter series",
+        "Chilli Heat",
+        "Buffalo King Megaways",
+        "Mustang Gold",
+        "5 Lions series",
+        "Aztec Gems",
+        "Pyramid Bonanza",
+        "Lucky Lightning",
 
-    function getRandomWinRate() {
-      return (Math.random() * 60 + 20).toFixed(1); // 20% to 80%
-    }
+        "Irish Crown",
+        "Gates of Olympus Super Scatter",
+        "Mahjong Wins Super Scatter",
+        "Wild West Gold Blazing Bounty",
+        "Gates of Hades",
+        "The Dog House – Royal Hunt",
+        "Book of Monsters",
+        "Big Bass Bonanza 1000",
 
-    function getRandomSpinType() {
-      return Math.random() < 0.3 ? "Buy Spin" : "Normal Spin";
-    }
+        "Starlight Princess 1000",
+        "Gates of Olympus 1000",
+        "Sugar Rush 1000",
+        "Sweet Bonanza 1000",
+        "Wisdom of Athena 1000",
+        "Gates of Olympus Xmas 1000",
+        "Hades Inferno 1000",
+        "Big Bass Bonanza 1000",
+        "Lucky Tiger 1000",
+      ]
+    };
 
-    function getAdvice(rate) {
-      if (rate > 55) return { text: "Good time to bet!", className: "good", icon: "✅" };
-      if (rate > 45) return { text: "Caution advised.", className: "wait", icon: "⚠️" };
-      return { text: "Better to wait.", className: "bad", icon: "⏳" };
-    }
+    const maxBetAmounts = {
+      "Sweet Bonanza": 1000,
+      "Sugar Rush": 900,
+      "Gates of Olympus": 1200,
+      "Starlight Princess": 1100,
+      "Big Bass Splash": 800,
+      "Fruit Party": 700,
+      "Wild West Gold": 1000,
+      "The Dog House": 950,
+      "Power of Thor Megaways": 1000,
+      "Joker’s Jewels": 850,
+      "Floating Dragon": 900,
+      "Madame Destiny Megaways": 950,
+      "John Hunter series": 1000,
+      "Chilli Heat": 900,
+      "Buffalo King Megaways": 1100,
+      "Mustang Gold": 900,
+      "5 Lions series": 800,
+      "Aztec Gems": 750,
+      "Pyramid Bonanza": 700,
+      "Lucky Lightning": 700,
+      "Irish Crown": 1200,
+      "Gates of Olympus Super Scatter": 1300,
+      "Mahjong Wins Super Scatter": 1250,
+      "Wild West Gold Blazing Bounty": 1150,
+      "Gates of Hades": 1200,
+      "The Dog House – Royal Hunt": 1100,
+      "Book of Monsters": 900,
+      "Big Bass Bonanza 1000": 1000,
+      "Starlight Princess 1000": 1100,
+      "Gates of Olympus 1000": 1200,
+      "Sugar Rush 1000": 900,
+      "Sweet Bonanza 1000": 1000,
+      "Wisdom of Athena 1000": 850,
+      "Gates of Olympus Xmas 1000": 1200,
+      "Hades Inferno 1000": 1150,
+      "Lucky Tiger 1000": 900,
+    };
 
-    // Store histories for each slot
-    const slotHistories = {};
-    const slotSpinTypes = {};
-    slots.forEach(slot => {
-      slotHistories[slot] = Array(5).fill(0).map(() => ({
-        rate: parseFloat(getRandomWinRate()),
-        time: new Date().toLocaleTimeString()
-      }));
-      slotSpinTypes[slot] = Array(5).fill(0).map(() => getRandomSpinType());
+    const allSlots = Object.values(providers).flat();
+    const slotHistories = {}, slotSpinHistories = {}, charts = {};
+    const spinTypes = ["Buy Spin", "Normal Spin"];
+    let isUpdating = true;
+
+    allSlots.forEach(slot => {
+      slotHistories[slot] = [];
+      slotSpinHistories[slot] = [];
     });
 
-    const slotsContainer = document.getElementById('slotsContainer');
-    const searchInput = document.getElementById('search');
-    const toggleBtn = document.getElementById('toggleBtn');
-    let updating = true;
-    let updateInterval;
-
-    function createSlotCard(slot) {
-      const card = document.createElement('div');
-      card.className = 'slot-card';
-
-      const title = document.createElement('h2');
-      title.className = 'slot-title';
-      title.textContent = slot;
-      card.appendChild(title);
-
-      const winrateDiv = document.createElement('div');
-      winrateDiv.className = 'winrate';
-      card.appendChild(winrateDiv);
-
-      const spinTypeDiv = document.createElement('div');
-      spinTypeDiv.className = 'spin-type';
-      card.appendChild(spinTypeDiv);
-
-      const adviceDiv = document.createElement('div');
-      adviceDiv.className = 'advice';
-      card.appendChild(adviceDiv);
-
-      const canvas = document.createElement('canvas');
-      card.appendChild(canvas);
-
-      return { card, winrateDiv, spinTypeDiv, adviceDiv, canvas };
+    function getRandomWinRate() {
+      return +(Math.random() * 100).toFixed(2);
     }
-
-    function updateSlotCardElements(slot, elements) {
-      const history = slotHistories[slot];
-      const avgRate = (history.reduce((acc, h) => acc + h.rate, 0) / history.length).toFixed(1);
-      const advice = getAdvice(avgRate);
-      const spinType = slotSpinTypes[slot][0];
-
-      elements.winrateDiv.textContent = `Moving Avg Win Rate: ${avgRate}%`;
-      elements.winrateDiv.style.color = advice.className === 'good' ? '#0f0' :
-        advice.className === 'wait' ? '#ffa500' : '#f55';
-
-      elements.spinTypeDiv.textContent = `Recommended Spin: ${spinType}`;
-      elements.adviceDiv.textContent = `${advice.icon} ${advice.text}`;
-      elements.adviceDiv.className = 'advice ' + advice.className;
-
-      // Update chart
-      const ctx = elements.canvas.getContext('2d');
-      if (elements.chart) elements.chart.destroy();
-
-      elements.chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: history.map(h => h.time).reverse(),
-          datasets: [{
-            label: 'Win Rate %',
-            data: history.map(h => h.rate).reverse(),
-            borderColor: '#ffcc00',
-            backgroundColor: 'rgba(255, 204, 0, 0.3)',
-            fill: true,
-            tension: 0.3,
-            pointRadius: 3,
-            pointHoverRadius: 6,
-          }]
-        },
-        options: {
-          animation: { duration: 500 },
-          scales: {
-            y: { min: 0, max: 100 },
-            x: { display: false }
-          },
-          plugins: { legend: { display: false } },
-          responsive: true,
-          maintainAspectRatio: false,
-        }
-      });
+    function getRandomSpinType() {
+      return spinTypes[Math.floor(Math.random() * spinTypes.length)];
     }
-
-    const slotElements = {};
+    function formatTime() {
+      return new Date().toLocaleTimeString('en-US',{hour12:false});
+    }
+    function movingAverage(arr) {
+      const n = Math.min(arr.length, 5);
+      const sum = arr.slice(0, n).reduce((a, v) => a + v.rate, 0);
+      return +(sum / n).toFixed(2);
+    }
+    function destroyCharts() {
+      Object.values(charts).forEach(c => c && c.destroy());
+      Object.keys(charts).forEach(k => delete charts[k]);
+    }
 
     function renderSlots() {
-      slotsContainer.innerHTML = '';
-      const filter = searchInput.value.trim().toLowerCase();
-      const filteredSlots = slots.filter(s => s.toLowerCase().includes(filter));
+      const container = document.getElementById("slotsContainer");
+      container.innerHTML = "";
+      destroyCharts();
+      const search = document.getElementById("searchInput").value.toLowerCase();
 
-      if (filteredSlots.length === 0) {
-        const noResult = document.createElement('p');
-        noResult.style.textAlign = 'center';
-        noResult.textContent = 'No slots found.';
-        slotsContainer.appendChild(noResult);
-        return;
-      }
+      const provider = "Pragmatic Play";
 
-      filteredSlots.forEach(slot => {
-        if (!slotElements[slot]) {
-          slotElements[slot] = createSlotCard(slot);
-        }
-        slotsContainer.appendChild(slotElements[slot].card);
-        updateSlotCardElements(slot, slotElements[slot]);
-      });
+      providers[provider].filter(s => s.toLowerCase().includes(search)).slice(0, 20)
+        .forEach(slot => {
+          const h = slotHistories[slot];
+          if (!h.length) return;
+
+          const avg = movingAverage(h);
+          const spin = slotSpinHistories[slot][0];
+          const time = h[0].time;
+          const advice = avg > 50 ? {cls:"good", txt:"Good time to bet!"}
+                                  : {cls:"wait", txt:"Better to wait."};
+          const rateColor = avg>50 ? "#0f0":"#f55";
+
+          // Determine recommended spin type based on avg win rate
+          let recommendedSpin;
+          if (avg > 65) {
+            recommendedSpin = "Buy Spin";
+          } else if (avg >= 40) {
+            recommendedSpin = "Normal Spin";
+          } else {
+            recommendedSpin = "Do Not Spin";
+          }
+
+          // Winning percentage prediction for next 30 seconds based on avg
+          const prediction = avg.toFixed(2);
+
+          // Recommended bet amount based on prediction and max bet for slot
+          const maxBet = maxBetAmounts[slot] || 1000;
+          const recommendedBet = Math.round((avg / 100) * maxBet);
+
+          const div = document.createElement("div");
+          div.className = "slot-card";
+          div.innerHTML = `
+            <h2>${slot} (${provider})</h2>
+            <div class="winrate" style="color:${rateColor}">
+              Moving Avg Win Rate: ${avg}% (last: ${h[0].rate}% at ${time})
+            </div>
+            <div class="spin-type">Recommended Spin Type: <b>${recommendedSpin}</b></div>
+            <div class="prediction">
+              🎯 Winning Percentage Prediction (Next 30s): ${prediction}%
+            </div>
+            <div class="recommended-bet">
+              💰 Recommended Bet Amount: <b>${recommendedBet.toLocaleString()}</b>
+            </div>
+            <canvas id="chart-${slot.replace(/\s+/g, '')}"></canvas>
+          `;
+
+          container.appendChild(div);
+
+          const ctx = div.querySelector("canvas").getContext("2d");
+          charts[slot] = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: h.map(x => x.time).reverse(),
+              datasets: [{
+                label: 'Win Rate %',
+                data: h.map(x => x.rate).reverse(),
+                borderColor: rateColor,
+                backgroundColor: 'rgba(0,204,102,0.3)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 3
+              }]
+            },
+            options:{
+              animation: {duration: 0},
+              responsive:true,
+              plugins: {legend: {display:false}},
+              scales: {
+                y: {
+                  min: 0,
+                  max: 100,
+                  ticks: {stepSize: 20}
+                }
+              }
+            }
+          });
+        });
     }
 
-    function updateData() {
-      const now = new Date().toLocaleTimeString();
-      slots.forEach(slot => {
-        const newRate = parseFloat(getRandomWinRate());
-        slotHistories[slot].unshift({ rate: newRate, time: now });
-        if (slotHistories[slot].length > 5) slotHistories[slot].pop();
+    function updateSlotData() {
+      allSlots.forEach(slot => {
+        const winRate = getRandomWinRate();
 
-        const newSpin = getRandomSpinType();
-        slotSpinTypes[slot].unshift(newSpin);
-        if (slotSpinTypes[slot].length > 5) slotSpinTypes[slot].pop();
+        const historyArr = slotHistories[slot];
+        const spinHistArr = slotSpinHistories[slot];
+
+        historyArr.unshift({rate: winRate, time: formatTime()});
+        spinHistArr.unshift(getRandomSpinType());
+
+        if(historyArr.length > 20) historyArr.pop();
+        if(spinHistArr.length > 20) spinHistArr.pop();
       });
+      document.getElementById("lastUpdated").textContent = `Last updated: ${formatTime()}`;
       renderSlots();
     }
 
-    searchInput.addEventListener('input', renderSlots);
+    document.getElementById("searchInput").addEventListener("input", renderSlots);
 
-    toggleBtn.addEventListener('click', () => {
-      updating = !updating;
-      if (updating) {
-        toggleBtn.textContent = 'Pause Updates ⏸️';
-        updateInterval = setInterval(updateData, 10000);
+    const toggleBtn = document.getElementById("toggleUpdatesBtn");
+    toggleBtn.addEventListener("click", () => {
+      isUpdating = !isUpdating;
+      toggleBtn.textContent = isUpdating ? "Pause Updates ⏸️" : "Resume Updates ▶️";
+      if (isUpdating) {
+        updateSlotData();
+        intervalId = setInterval(() => {
+          updateSlotData();
+        }, 30000);
       } else {
-        toggleBtn.textContent = 'Resume Updates ▶️';
-        clearInterval(updateInterval);
+        clearInterval(intervalId);
       }
     });
 
-    // Initial render and start updates
-    renderSlots();
-    updateInterval = setInterval(updateData, 10000);
+    let intervalId = setInterval(() => {
+      if (isUpdating) updateSlotData();
+    }, 30000);
+
+    updateSlotData();
   </script>
 </body>
 </html>
-
