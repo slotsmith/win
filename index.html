@@ -1,1 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pragmatic Play Slot Win Rates</title>
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 20px;
+    }
+    h1 {
+      color: #ffcc00;
+      text-align: center;
+    }
+    #search {
+      display: block;
+      margin: 0 auto 20px;
+      padding: 10px;
+      width: 300px;
+      border-radius: 6px;
+      border: none;
+      font-size: 16px;
+    }
+    #toggleBtn {
+      display: block;
+      margin: 0 auto 30px;
+      background: #ffcc00;
+      border: none;
+      padding: 10px 20px;
+      font-weight: bold;
+      color: #111;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    .slot-card {
+      background: #222;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 0 15px rgba(255,204,0,0.3);
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .slot-title {
+      font-size: 1.2em;
+      margin: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .winrate {
+      color: #ffcc00;
+      font-weight: bold;
+    }
+    .advice {
+      font-weight: bold;
+      font-size: 0.9em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .advice.good {
+      color: #0f0;
+    }
+    .advice.wait {
+      color: #ffa500;
+    }
+    .advice.bad {
+      color: #f55;
+    }
+    canvas {
+      width: 100% !important;
+      height: 120px !important;
+      background: #111;
+      border-radius: 6px;
+      box-shadow: inset 0 0 10px rgba(255,204,0,0.3);
+    }
+    .spin-type {
+      font-style: italic;
+      font-size: 0.9em;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔥 Pragmatic Play Slot Win Rates 🔥</h1>
+  <input type="search" id="search" placeholder="Search slots..." aria-label="Search slots" />
+  <button id="toggleBtn">Pause Updates ⏸️</button>
+  <div id="slotsContainer"></div>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Sample slots list — you can replace or expand this
+    const slots = [
+      "Sweet Bonanza",
+      "Gates of Olympus",
+      "Starlight Princess",
+      "Big Bass Bonanza",
+      "Wild West Gold",
+      "Fruit Party",
+      "The Dog House",
+      "Release the Kraken",
+      "John Hunter and the Tomb of the Scarab Queen",
+      "Great Rhino"
+    ];
+
+    function getRandomWinRate() {
+      return (Math.random() * 60 + 20).toFixed(1); // 20% to 80%
+    }
+
+    function getRandomSpinType() {
+      return Math.random() < 0.3 ? "Buy Spin" : "Normal Spin";
+    }
+
+    function getAdvice(rate) {
+      if (rate > 55) return { text: "Good time to bet!", className: "good", icon: "✅" };
+      if (rate > 45) return { text: "Caution advised.", className: "wait", icon: "⚠️" };
+      return { text: "Better to wait.", className: "bad", icon: "⏳" };
+    }
+
+    // Store histories for each slot
+    const slotHistories = {};
+    const slotSpinTypes = {};
+    slots.forEach(slot => {
+      slotHistories[slot] = Array(5).fill(0).map(() => ({
+        rate: parseFloat(getRandomWinRate()),
+        time: new Date().toLocaleTimeString()
+      }));
+      slotSpinTypes[slot] = Array(5).fill(0).map(() => getRandomSpinType());
+    });
+
+    const slotsContainer = document.getElementById('slotsContainer');
+    const searchInput = document.getElementById('search');
+    const toggleBtn = document.getElementById('toggleBtn');
+    let updating = true;
+    let updateInterval;
+
+    function createSlotCard(slot) {
+      const card = document.createElement('div');
+      card.className = 'slot-card';
+
+      const title = document.createElement('h2');
+      title.className = 'slot-title';
+      title.textContent = slot;
+      card.appendChild(title);
+
+      const winrateDiv = document.createElement('div');
+      winrateDiv.className = 'winrate';
+      card.appendChild(winrateDiv);
+
+      const spinTypeDiv = document.createElement('div');
+      spinTypeDiv.className = 'spin-type';
+      card.appendChild(spinTypeDiv);
+
+      const adviceDiv = document.createElement('div');
+      adviceDiv.className = 'advice';
+      card.appendChild(adviceDiv);
+
+      const canvas = document.createElement('canvas');
+      card.appendChild(canvas);
+
+      return { card, winrateDiv, spinTypeDiv, adviceDiv, canvas };
+    }
+
+    function updateSlotCardElements(slot, elements) {
+      const history = slotHistories[slot];
+      const avgRate = (history.reduce((acc, h) => acc + h.rate, 0) / history.length).toFixed(1);
+      const advice = getAdvice(avgRate);
+      const spinType = slotSpinTypes[slot][0];
+
+      elements.winrateDiv.textContent = `Moving Avg Win Rate: ${avgRate}%`;
+      elements.winrateDiv.style.color = advice.className === 'good' ? '#0f0' :
+        advice.className === 'wait' ? '#ffa500' : '#f55';
+
+      elements.spinTypeDiv.textContent = `Recommended Spin: ${spinType}`;
+      elements.adviceDiv.textContent = `${advice.icon} ${advice.text}`;
+      elements.adviceDiv.className = 'advice ' + advice.className;
+
+      // Update chart
+      const ctx = elements.canvas.getContext('2d');
+      if (elements.chart) elements.chart.destroy();
+
+      elements.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: history.map(h => h.time).reverse(),
+          datasets: [{
+            label: 'Win Rate %',
+            data: history.map(h => h.rate).reverse(),
+            borderColor: '#ffcc00',
+            backgroundColor: 'rgba(255, 204, 0, 0.3)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 3,
+            pointHoverRadius: 6,
+          }]
+        },
+        options: {
+          animation: { duration: 500 },
+          scales: {
+            y: { min: 0, max: 100 },
+            x: { display: false }
+          },
+          plugins: { legend: { display: false } },
+          responsive: true,
+          maintainAspectRatio: false,
+        }
+      });
+    }
+
+    const slotElements = {};
+
+    function renderSlots() {
+      slotsContainer.innerHTML = '';
+      const filter = searchInput.value.trim().toLowerCase();
+      const filteredSlots = slots.filter(s => s.toLowerCase().includes(filter));
+
+      if (filteredSlots.length === 0) {
+        const noResult = document.createElement('p');
+        noResult.style.textAlign = 'center';
+        noResult.textContent = 'No slots found.';
+        slotsContainer.appendChild(noResult);
+        return;
+      }
+
+      filteredSlots.forEach(slot => {
+        if (!slotElements[slot]) {
+          slotElements[slot] = createSlotCard(slot);
+        }
+        slotsContainer.appendChild(slotElements[slot].card);
+        updateSlotCardElements(slot, slotElements[slot]);
+      });
+    }
+
+    function updateData() {
+      const now = new Date().toLocaleTimeString();
+      slots.forEach(slot => {
+        const newRate = parseFloat(getRandomWinRate());
+        slotHistories[slot].unshift({ rate: newRate, time: now });
+        if (slotHistories[slot].length > 5) slotHistories[slot].pop();
+
+        const newSpin = getRandomSpinType();
+        slotSpinTypes[slot].unshift(newSpin);
+        if (slotSpinTypes[slot].length > 5) slotSpinTypes[slot].pop();
+      });
+      renderSlots();
+    }
+
+    searchInput.addEventListener('input', renderSlots);
+
+    toggleBtn.addEventListener('click', () => {
+      updating = !updating;
+      if (updating) {
+        toggleBtn.textContent = 'Pause Updates ⏸️';
+        updateInterval = setInterval(updateData, 10000);
+      } else {
+        toggleBtn.textContent = 'Resume Updates ▶️';
+        clearInterval(updateInterval);
+      }
+    });
+
+    // Initial render and start updates
+    renderSlots();
+    updateInterval = setInterval(updateData, 10000);
+  </script>
+</body>
+</html>
 
