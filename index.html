@@ -350,205 +350,281 @@
   const backToLoginFromReset = document.getElementById('backToLoginFromReset');
 
   const logoutBtn = document.getElementById('logoutBtn');
-
-  const searchBar = document.getElementById('searchBar');
   const slotsContainer = document.getElementById('slotsContainer');
+  const searchBar = document.getElementById('searchBar');
   const lastUpdated = document.getElementById('lastUpdated');
 
   const adminPanel = document.getElementById('adminPanel');
   const adminTextarea = document.getElementById('adminTextarea');
   const saveSlotsBtn = document.getElementById('saveSlotsBtn');
 
-  // Show/hide forms handlers
-  showRegisterBtn.onclick = () => {
-    loginForm.classList.add('hidden');
-    registerForm.classList.remove('hidden');
-    resetForm.classList.add('hidden');
-    messageDiv.textContent = '';
-  };
-
-  showResetBtn.onclick = () => {
-    loginForm.classList.add('hidden');
-    registerForm.classList.add('hidden');
-    resetForm.classList.remove('hidden');
-    messageDiv.textContent = '';
-  };
-
-  backToLoginFromReg.onclick = () => {
-    loginForm.classList.remove('hidden');
-    registerForm.classList.add('hidden');
-    resetForm.classList.add('hidden');
-    messageDiv.textContent = '';
-  };
-
-  backToLoginFromReset.onclick = () => {
-    loginForm.classList.remove('hidden');
-    registerForm.classList.add('hidden');
-    resetForm.classList.add('hidden');
-    messageDiv.textContent = '';
-  };
-
-  // Fake authentication function
-  function fakeAuth(username, password) {
-    if (username === 'admin' && password === 'admin') return { success: true, role: 'admin' };
-    if (username && password) return { success: true, role: 'user' };
-    return { success: false, error: 'Invalid credentials' };
+  // Authentication simulation: store users in localStorage
+  // Users structure: {username: {password, email, isAdmin}}
+  function getUsers() {
+    return JSON.parse(localStorage.getItem('users') || '{}');
   }
 
-  // Login submit handler
+  function saveUsers(users) {
+    localStorage.setItem('users', JSON.stringify(users));
+  }
+
+  function getCurrentUser() {
+    return JSON.parse(localStorage.getItem('currentUser') || 'null');
+  }
+
+  function setCurrentUser(user) {
+    localStorage.setItem('currentUser', JSON.stringify(user));
+  }
+
+  // Slots data persistence (saved in localStorage)
+  function saveSlotsData() {
+    localStorage.setItem('slotsData', JSON.stringify(slotGames));
+  }
+
+  function loadSlotsData() {
+    const saved = localStorage.getItem('slotsData');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) slotGames = parsed;
+      } catch { }
+    }
+  }
+
+  // Show message
+  function showMessage(text, isError = true) {
+    messageDiv.textContent = text;
+    messageDiv.style.color = isError ? '#ff5555' : '#00ffb3';
+    if (text) {
+      setTimeout(() => { messageDiv.textContent = ''; }, 4000);
+    }
+  }
+
+  // Login flow
   loginForm.addEventListener('submit', e => {
     e.preventDefault();
     const username = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value.trim();
-    const result = fakeAuth(username, password);
-    if (result.success) {
-      isAdmin = (result.role === 'admin');
-      isUserMode = false;
-      messageDiv.textContent = '';
-      loginContainer.classList.add('hidden');
-      appContainer.classList.remove('hidden');
-      adminPanel.classList.toggle('hidden', !isAdmin);
-      loadSlotGames();
-      renderSlots();
-      lastUpdated.textContent = `Last updated: ${new Date().toLocaleString()}`;
-      if (isAdmin) updateAdminTextarea();
-    } else {
-      messageDiv.textContent = result.error;
+    const password = document.getElementById('loginPassword').value;
+
+    const users = getUsers();
+    if (!users[username]) {
+      showMessage("User does not exist.");
+      return;
     }
+    if (users[username].password !== password) {
+      showMessage("Incorrect password.");
+      return;
+    }
+    setCurrentUser({ username, isAdmin: !!users[username].isAdmin });
+    isAdmin = !!users[username].isAdmin;
+    isUserMode = !isAdmin; // user mode = not admin
+    loadSlotsData();
+    showApp();
+    showMessage("Login successful!", false);
   });
 
-  // Register submit (fake)
+  // Register flow
   registerForm.addEventListener('submit', e => {
     e.preventDefault();
     const username = document.getElementById('regUsername').value.trim();
     const email = document.getElementById('regEmail').value.trim();
     const password = document.getElementById('regPassword').value;
-    const passwordConfirm = document.getElementById('regPasswordConfirm').value;
-    if (!username || !email || !password) {
-      messageDiv.textContent = 'Please fill all fields.';
+    const confirmPassword = document.getElementById('regPasswordConfirm').value;
+
+    if (password !== confirmPassword) {
+      showMessage("Passwords do not match.");
       return;
     }
-    if (password !== passwordConfirm) {
-      messageDiv.textContent = 'Passwords do not match.';
+
+    const users = getUsers();
+    if (users[username]) {
+      showMessage("Username already taken.");
       return;
     }
-    messageDiv.style.color = '#00ffb3';
-    messageDiv.textContent = `User ${username} registered (demo only). Please login.`;
-    registerForm.reset();
-    registerForm.classList.add('hidden');
-    loginForm.classList.remove('hidden');
+
+    users[username] = { password, email, isAdmin: false };
+    saveUsers(users);
+    showMessage("Registered successfully! Please login.", false);
+
+    // Switch back to login form
+    showLoginForm();
   });
 
-  // Reset password submit (fake)
+  // Reset password flow (simulated)
   resetForm.addEventListener('submit', e => {
     e.preventDefault();
     const username = document.getElementById('resetUsername').value.trim();
     const email = document.getElementById('resetEmail').value.trim();
-    if (!username || !email) {
-      messageDiv.textContent = 'Please fill all fields.';
+
+    const users = getUsers();
+    if (!users[username]) {
+      showMessage("User does not exist.");
       return;
     }
-    messageDiv.style.color = '#00ffb3';
-    messageDiv.textContent = `Password reset link sent to ${email} (demo only).`;
-    resetForm.reset();
-    resetForm.classList.add('hidden');
+    if (users[username].email !== email) {
+      showMessage("Email does not match our records.");
+      return;
+    }
+    // For demo, just reset password to 'password123'
+    users[username].password = 'password123';
+    saveUsers(users);
+    showMessage("Password reset to 'password123'. Please login.", false);
+    showLoginForm();
+  });
+
+  // Show login form, hide others
+  function showLoginForm() {
     loginForm.classList.remove('hidden');
+    registerForm.classList.add('hidden');
+    resetForm.classList.add('hidden');
+  }
+
+  // Show register form
+  showRegisterBtn.addEventListener('click', () => {
+    loginForm.classList.add('hidden');
+    registerForm.classList.remove('hidden');
+    resetForm.classList.add('hidden');
+  });
+
+  backToLoginFromReg.addEventListener('click', () => {
+    showLoginForm();
+  });
+
+  // Show reset form
+  showResetBtn.addEventListener('click', () => {
+    loginForm.classList.add('hidden');
+    registerForm.classList.add('hidden');
+    resetForm.classList.remove('hidden');
+  });
+
+  backToLoginFromReset.addEventListener('click', () => {
+    showLoginForm();
   });
 
   // Logout
   logoutBtn.addEventListener('click', () => {
+    setCurrentUser(null);
+    slotGames = [];
+    slotsData = [];
     isAdmin = false;
     isUserMode = false;
-    messageDiv.textContent = '';
-    messageDiv.style.color = '#ff5555';
-    loginForm.reset();
-    registerForm.reset();
-    resetForm.reset();
-    adminTextarea.value = '';
-    loginContainer.classList.remove('hidden');
     appContainer.classList.add('hidden');
+    loginContainer.classList.remove('hidden');
+    showLoginForm();
   });
 
-  // Load slot games data with fake stats
-  function loadSlotGames() {
-    slotsData = slotGames.map(name => {
-      let prediction = parseFloat(randomFloat(30, 95));
-      let rate = parseFloat(randomFloat(10, 100));
-      let history = generateFakeHistory();
-      let avgHistory = history.reduce((a, b) => a + b, 0) / history.length;
-      return {
-        name,
-        prediction,
-        rate,
-        history,
-        avgHistory,
-      };
-    });
-  }
-
-  // Render slot cards with filtering
-  function renderSlots() {
-    const searchTerm = searchBar.value.trim().toLowerCase();
+  // Render slots with charts and stats
+  function renderSlots(filter = '') {
     slotsContainer.innerHTML = '';
-
-    let filtered = slotsData.filter(slot => slot.name.toLowerCase().includes(searchTerm));
-
-    if (filtered.length === 0) {
-      slotsContainer.innerHTML = `<p style="text-align:center; color:#888;">No slots found.</p>`;
+    const filteredSlots = slotGames.filter(slot =>
+      slot.toLowerCase().includes(filter.toLowerCase())
+    );
+    if (filteredSlots.length === 0) {
+      slotsContainer.innerHTML = '<p>No slot games found.</p>';
       return;
     }
 
-    filtered.forEach((slot, index) => {
+    filteredSlots.forEach((slot, idx) => {
+      // Generate fake data on the fly for demo
+      const prediction = parseFloat(randomFloat(0, 100));
+      const averageRate = parseFloat(randomFloat(40, 75));
+      const lastTen = generateFakeHistory();
+
+      const bet = recommendBet(prediction);
+      const betAmount = recommendBetAmount(prediction);
+      const spinType = recommendSpinType(averageRate, prediction);
+
+      // Color coding for average rate
+      let avgClass = 'green';
+      if (averageRate < 45) avgClass = 'red';
+      else if (averageRate < 55) avgClass = 'yellow';
+
+      // Create card element
       const card = document.createElement('div');
-      card.classList.add('slot-card');
-
-      let predictionClass = slot.prediction > 80 ? 'green' :
-                            slot.prediction > 60 ? 'yellow' : 'red';
-
-      let rateClass = slot.rate > 70 ? 'green' :
-                      slot.rate > 50 ? 'yellow' : 'red';
+      card.className = 'slot-card';
 
       card.innerHTML = `
-        <h3>${slot.name}</h3>
-        <p class="stat">Prediction: <span class="${predictionClass}">${slot.prediction.toFixed(2)}%</span></p>
-        <p class="stat">Win Rate: <span class="${rateClass}">${slot.rate.toFixed(2)}%</span></p>
-        <p class="stat">Recommendation: <strong>${recommendBet(slot.prediction)}</strong></p>
-        <p class="stat">Recommended Bet Amount: <strong>${recommendBetAmount(slot.rate)}</strong></p>
-        <p class="stat">Spin Type: <strong>${recommendSpinType(slot.avgHistory, slot.prediction)}</strong></p>
-        <canvas class="graph-canvas" id="chart-${index}"></canvas>
+        <h3>${slot}</h3>
+        <div class="stat">Average Rate: <span class="${avgClass}">${averageRate}%</span></div>
+        <div class="stat">Prediction: <span class="green">${prediction}%</span></div>
+        <div class="stat">Bet: <span>${bet}</span></div>
+        <div class="stat">Bet Amount: <span>${betAmount}</span></div>
+        <div class="stat">Spin Type: <span>${spinType}</span></div>
+        <canvas id="chart-${idx}" class="graph-canvas"></canvas>
       `;
 
       slotsContainer.appendChild(card);
 
-      // Draw chart
-      const ctx = document.getElementById(`chart-${index}`).getContext('2d');
-      createChart(ctx, slot.history);
+      // Create chart
+      const ctx = document.getElementById(`chart-${idx}`).getContext('2d');
+      createChart(ctx, lastTen);
     });
   }
 
-  // Search input listener
+  // Search filter
   searchBar.addEventListener('input', () => {
-    renderSlots();
+    renderSlots(searchBar.value);
   });
 
-  // Admin textarea update
-  function updateAdminTextarea() {
+  // Admin panel toggle
+  function showAdminPanel(show) {
+    adminPanel.classList.toggle('hidden', !show);
+  }
+
+  // Populate admin textarea from slotGames
+  function loadAdminTextarea() {
     adminTextarea.value = slotGames.join('\n');
   }
 
-  // Save admin slot games changes
+  // Save changes from admin textarea
   saveSlotsBtn.addEventListener('click', () => {
-    const lines = adminTextarea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const lines = adminTextarea.value.split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
     if (lines.length === 0) {
-      alert('Please enter at least one slot game.');
+      alert("Slot list cannot be empty.");
       return;
     }
     slotGames = lines;
-    loadSlotGames();
-    renderSlots();
-    alert('Slot games updated.');
+    saveSlotsData();
+    renderSlots(searchBar.value);
+    alert("Slot list saved.");
   });
 
+  // Show app after login
+  function showApp() {
+    loginContainer.classList.add('hidden');
+    appContainer.classList.remove('hidden');
+    lastUpdated.textContent = "Last updated: " + new Date().toLocaleString();
+    renderSlots();
+
+    if (isAdmin) {
+      showAdminPanel(true);
+      loadAdminTextarea();
+    } else {
+      showAdminPanel(false);
+    }
+  }
+
+  // On page load, check if user is logged in
+  window.addEventListener('load', () => {
+    const currentUser = getCurrentUser();
+    if (currentUser) {
+      isAdmin = currentUser.isAdmin;
+      isUserMode = !isAdmin;
+      loadSlotsData();
+      showApp();
+    } else {
+      showLoginForm();
+    }
+
+    // Ensure login container visible, app hidden if no user
+    if (!currentUser) {
+      appContainer.classList.add('hidden');
+      loginContainer.classList.remove('hidden');
+    }
+  });
 </script>
+
 </body>
 </html>
