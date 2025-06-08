@@ -1,548 +1,430 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Slot Smith Pro - Admin & Persistence</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #1f1f2e;
-    color: #fff;
-    margin: 0; padding: 20px;
-  }
-  h1 {
-    text-align: center;
-    font-size: 2.5rem;
-    margin-bottom: 5px;
-    color: #00ffc3;
-  }
-  #lastUpdated {
-    text-align: center;
-    color: #ccc;
-    font-size: 0.9rem;
-    margin-bottom: 20px;
-  }
-  #searchBar {
-    display: block;
-    margin: 0 auto 20px auto;
-    width: 60%;
-    max-width: 600px;
-    padding: 12px 20px;
-    font-size: 1.1rem;
-    border-radius: 15px;
-    border: none;
-    outline: none;
-    box-shadow: 0 0 10px #00ffc3;
-    background: #2c2c3c;
-    color: #fff;
-    transition: box-shadow 0.3s ease;
-  }
-  #searchBar::placeholder {
-    color: #66fff0cc;
-  }
-  #searchBar:focus {
-    box-shadow: 0 0 15px #00ffc3;
-    background: #39394a;
-  }
-  .slots-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(550px, 1fr));
-    gap: 30px;
-  }
-  .slot-card {
-    background: #2c2c3c;
-    border-radius: 20px;
-    padding: 30px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fadeInUp 0.6s forwards;
-  }
-  @keyframes fadeInUp {
-    to {
-      opacity: 1;
-      transform: translateY(0);
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Slot Smith Pro</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1f1f2e;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
     }
-  }
-  .slot-card h2 {
-    margin: 0 0 20px;
-    color: #00d4ff;
-    word-break: break-word;
-  }
-  .stat {
-    margin: 8px 0;
-    font-size: 1.1rem;
-  }
-  .graph-canvas {
-    margin-top: 20px;
-    width: 100% !important;
-    max-height: 90px !important;
-    height: auto !important;
-  }
-  .green {
-    color: #00ffb3;
-    font-weight: 600;
-  }
-  .yellow {
-    color: #ffd966;
-    font-weight: 600;
-  }
-  .red {
-    color: #ff6666;
-    font-weight: 600;
-  }
+    h1 {
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 5px;
+      color: #00ffc3;
+    }
+    #lastUpdated {
+      text-align: center;
+      color: #ccc;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+    #searchBar {
+      display: block;
+      margin: 0 auto 30px auto;
+      width: 60%;
+      max-width: 600px;
+      padding: 12px 20px;
+      font-size: 1.1rem;
+      border-radius: 15px;
+      border: none;
+      outline: none;
+      box-shadow: 0 0 6px #00ffc3cc;
+      background: #2c2c3c;
+      color: #fff;
+      transition: box-shadow 0.3s ease;
+    }
+    #searchBar::placeholder {
+      color: #66fff0cc;
+    }
+    #searchBar:focus {
+      box-shadow: 0 0 8px #00ffc3cc;
+      background: #39394a;
+    }
+    .slots-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(550px, 1fr));
+      gap: 30px;
+    }
+    .slot-card {
+      background: #2c2c3c;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    }
+    .slot-card h2 {
+      margin: 0 0 20px;
+      color: #00d4ff;
+      word-break: break-word;
+    }
+    .stat {
+      margin: 8px 0;
+      font-size: 1.1rem;
+    }
+    .graph-canvas {
+      margin-top: 20px;
+      width: 100% !important;
+      max-height: 90px !important;
+      height: auto !important;
+    }
+    .green {
+      color: #00ffb3;
+      font-weight: 600;
+    }
+    .yellow {
+      color: #ffd966;
+      font-weight: 600;
+    }
+    .red {
+      color: #ff6666;
+      font-weight: 600;
+    }
 
-  /* Admin Button */
-  #adminBtn {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #00ffc3;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 10px;
-    color: #111;
-    font-weight: 700;
-    cursor: pointer;
-    box-shadow: 0 0 10px #00ffc3;
-    transition: background-color 0.3s ease;
-    z-index: 999;
-  }
-  #adminBtn {
-  position: fixed;
-  top: 15px;      /* distance from the top */
-  right: 15px;    /* distance from the right */
-  padding: 10px 15px;
-  background-color: #00ffc3;
-  color: #000;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  box-shadow: 0 0 10px #00ffc3cc;
-  z-index: 9999; /* stay on top of other elements */
-  transition: background-color 0.3s ease;
-}
+    /* Admin Panel */
+    #adminPanel {
+      background: #222233;
+      border-radius: 15px;
+      padding: 15px 20px;
+      max-width: 600px;
+      margin: 0 auto 30px auto;
+      display: none;
+    }
+    #adminPanel input[type="text"] {
+      padding: 8px 12px;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      width: 70%;
+      margin-right: 10px;
+    }
+    #adminPanel button {
+      padding: 9px 15px;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+      background-color: #00ffc3;
+      color: #000;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
+    }
+    #adminPanel button:hover {
+      background-color: #00d4aa;
+    }
+    #adminPanel .remove-btn {
+      background-color: #ff6666;
+      color: white;
+      margin-left: 10px;
+      padding: 6px 10px;
+      font-size: 0.9rem;
+      border-radius: 8px;
+    }
+    #adminPanel .remove-btn:hover {
+      background-color: #e65555;
+    }
 
-  }
-
-  /* Admin Modal */
-  #adminModal {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.85);
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-  #adminModal.active {
-    display: flex;
-  }
-  #adminContent {
-    background: #2c2c3c;
-    padding: 25px 30px;
-    border-radius: 20px;
-    width: 90%;
-    max-width: 500px;
-    color: #fff;
-    box-shadow: 0 0 20px #00ffc3;
-  }
-  #adminContent h2 {
-    margin-top: 0;
-    color: #00ffc3;
-  }
-  #adminContent label {
-    display: block;
-    margin: 10px 0 5px;
-  }
-  #adminContent input[type="text"],
-  #adminContent input[type="password"] {
-    width: 100%;
-    padding: 8px 12px;
-    border-radius: 10px;
-    border: none;
-    outline: none;
-    font-size: 1rem;
-    margin-bottom: 15px;
-    background: #39394a;
-    color: #fff;
-  }
-  #adminContent button {
-    background: #00ffc3;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    color: #111;
-    box-shadow: 0 0 10px #00ffc3;
-    margin-right: 10px;
-    transition: background-color 0.3s ease;
-  }
-  #adminContent button:hover {
-    background: #00d4ff;
-    color: #fff;
-  }
-  #adminContent .closeBtn {
-    background: #ff4c4c;
-    color: #fff;
-    box-shadow: 0 0 10px #ff4c4c;
-  }
-  #adminContent .closeBtn:hover {
-    background: #ff0000;
-  }
-
-  /* Admin Panel */
-  #adminPanel {
-    margin-top: 20px;
-  }
-  #adminPanel label {
-    font-weight: 600;
-  }
-  #slotList {
-    max-height: 150px;
-    overflow-y: auto;
-    background: #39394a;
-    border-radius: 10px;
-    padding: 10px;
-    margin-bottom: 15px;
-  }
-  #slotList div {
-    display: flex;
-    justify-content: space-between;
-    padding: 5px 0;
-    border-bottom: 1px solid #2c2c3c;
-  }
-  #slotList div:last-child {
-    border-bottom: none;
-  }
-  #slotList button {
-    background: #ff6666;
-    border: none;
-    color: #fff;
-    border-radius: 6px;
-    cursor: pointer;
-    padding: 2px 8px;
-    font-size: 0.9rem;
-    transition: background-color 0.3s ease;
-  }
-  #slotList button:hover {
-    background: #ff1a1a;
-  }
-  #exportBtn {
-    background: #00d4ff;
-    margin-top: 10px;
-  }
-  #exportBtn:hover {
-    background: #009ecc;
-  }
-</style>
+    /* Modal Styles */
+    #loginModal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    #loginBox {
+      background: #2c2c3c;
+      padding: 30px 40px;
+      border-radius: 15px;
+      box-shadow: 0 0 15px #00ffc3;
+      width: 320px;
+      text-align: center;
+    }
+    #loginBox h2 {
+      margin-bottom: 20px;
+      color: #00ffc3;
+    }
+    #loginBox input {
+      width: 100%;
+      padding: 10px 15px;
+      margin: 10px 0;
+      border-radius: 12px;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      background: #39394a;
+      color: #fff;
+    }
+    #loginBox button {
+      margin-top: 15px;
+      width: 100%;
+      padding: 12px 0;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 12px;
+      background: #00ffc3;
+      color: #000;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    #loginBox button:hover {
+      background: #00d4aa;
+    }
+    #loginError {
+      color: #ff6666;
+      margin-top: 10px;
+      font-weight: 600;
+      display: none;
+    }
+  </style>
 </head>
 <body>
+  <h1>🎰 Slot Smith Pro</h1>
+  <p id="lastUpdated">Last updated: --</p>
 
-<h1>🎰 Slot Smith Pro</h1>
-<p id="lastUpdated">Last updated: --</p>
-<input type="text" id="searchBar" placeholder="Search for a slot game..." />
-<div class="slots-container" id="slotsContainer"></div>
+  <input type="text" id="searchBar" placeholder="Search for a slot game..." />
 
-<button id="adminBtn" title="Admin Login">Admin</button>
+  <div id="adminPanel">
+    <input type="text" id="newSlotName" placeholder="Add new slot game name..." />
+    <button id="addSlotBtn">Add Slot</button>
+    <p style="margin-top: 15px; font-size: 1.1rem;">Remove slot games:</p>
+    <div id="removeList"></div>
+  </div>
 
-<!-- Admin Modal -->
-<div id="adminModal">
-  <div id="adminContent">
-    <h2>Admin Login</h2>
-    <label for="adminPass">Password:</label>
-    <input type="password" id="adminPass" placeholder="Enter admin password" />
-    <button id="loginBtn">Login</button>
-    <button class="closeBtn" id="closeAdminBtn">Close</button>
+  <div class="slots-container" id="slotsContainer"></div>
 
-    <div id="adminPanel" style="display:none;">
-      <h2>Admin Panel</h2>
-
-      <label for="newSlotName">Add New Slot Game:</label>
-      <input type="text" id="newSlotName" placeholder="Slot game name" />
-      <button id="addSlotBtn">Add Slot</button>
-
-      <label>Current Slots:</label>
-      <div id="slotList"></div>
-
-      <button id="exportBtn">Export Slot List as JSON</button>
-      <button class="closeBtn" id="logoutBtn">Logout</button>
+  <!-- Login Modal -->
+  <div id="loginModal">
+    <div id="loginBox">
+      <h2>Admin Login</h2>
+      <input type="text" id="username" placeholder="Username" autocomplete="off" />
+      <input type="password" id="password" placeholder="Password" autocomplete="off" />
+      <button id="loginBtn">Login</button>
+      <p id="loginError">Invalid username or password.</p>
     </div>
   </div>
-</div>
 
-<script>
-  const adminPassword = "(SlotSmith@2025)"; // Change your password here
+  <script>
+    // Hardcoded admin credentials
+    const ADMIN_USERNAME = "admin";
+    const ADMIN_PASSWORD = "12345";
 
-  // Initial slot games - will load from localStorage if available
-  const defaultSlots = [
-    "Sweet Bonanza", "Gates of Olympus", "Starlight Princess", "Sugar Rush", "Big Bass Splash",
-    "Wild West Gold", "The Dog House", "Power of Thor Megaways", "Joker’s Jewels", "Floating Dragon",
-    // ...add all default slots as before or fewer for demo
-  ];
+    const loginModal = document.getElementById('loginModal');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('loginError');
 
-  let slotGames = [];
-
-  // Load slots from localStorage or use default
-  function loadSlots() {
-    const saved = localStorage.getItem("slotGames");
-    if (saved) {
-      try {
-        slotGames = JSON.parse(saved);
-      } catch {
-        slotGames = defaultSlots;
+    loginBtn.addEventListener('click', () => {
+      const user = document.getElementById('username').value.trim();
+      const pass = document.getElementById('password').value.trim();
+      if(user === ADMIN_USERNAME && pass === ADMIN_PASSWORD) {
+        loginModal.style.display = 'none';
+        adminMode = true;
+        showAdminPanel();
+        renderRemoveList();
+      } else {
+        loginError.style.display = 'block';
       }
-    } else {
-      slotGames = defaultSlots;
+    });
+
+    let adminMode = false;
+
+    const slotGames = [
+      "Sweet Bonanza", "Gates of Olympus", "Starlight Princess", "Sugar Rush", "Big Bass Splash",
+      "Wild West Gold", "The Dog House", "Power of Thor Megaways", "Joker’s Jewels", "Floating Dragon",
+      "Madame Destiny Megaways", "John Hunter series", "Chilli Heat", "Buffalo King Megaways", "Mustang Gold",
+      "5 Lions series", "Aztec Gems", "Pyramid Bonanza", "Lucky Lightning", "Irish Crown",
+      "Gates of Olympus Super Scatter", "Mahjong Wins Super Scatter", "Wild West Gold Blazing Bounty",
+      "Gates of Hades", "The Dog House – Royal Hunt", "Book of Monsters", "Big Bass Bonanza 1000",
+      "Starlight Princess 1000", "Gates of Olympus 1000", "Sugar Rush 1000", "Sweet Bonanza 1000",
+      "Wisdom of Athena 1000", "Gates of Olympus Xmas 1000", "Hades Inferno 1000", "Lucky Tiger 1000",
+      "Zeus vs Hades Gods of War", "Gates of Gatotkacha 1000", "Gates of Olympus X-Max 1000",
+      "Gates of Gatotkacha", "Candy Blitz Bombs", "Fire Portals", "Sugar Rush X-Max", "Candy Blitz",
+      "Rujak Bonanza", "Wildies", "Sweet Bonanza X-Max", "Happy Fortune", "Wisdom of Athena", "Sticky Bees",
+      "Cyan Mania", "Forge of Olympus", "Wild Bison Church", "The Dog House Dog or Alive",
+      "Mustang Gold Mega Waste", "Will of Gold", "Gates of Olympus Dice", "Aztec Treasure Hunt",
+      "Angel vs Sinner", "Power of Ninja", "Six Joker", "Twilight Princess", "Cyber Heist",
+      "Five Lions Mega Waste", "Big Bus Bay at the Graces", "Heart of Cleopatra", "The Dog House Mega Waste",
+      "Release the Bison", "Power of Thor Mega Waste", "Buffalo King Mega Waste", "Chest of Kaishen",
+      "Five Lions 2 Mega Waste", "Greedy Fortune Pig", "Majestic Express Gold Run", "Pig Farm",
+      "Jumbo Safari", "Fiesta Fortune", "Sleeping Dragon", "Resurrecting Riches", "Witch Heart",
+      "Super Scatter", "Cash Surge", "Five Lions Reborn", "Ride the Lightning", "Bandit Mega Waste",
+      "Joker's Jewels Cash", "Blitz Super Wheel", "Triple Pot Gold", "Wild Wild Joker", "Lucky Wild Pop",
+      "Raging Waterfall", "Pepe's Pepperoni Pizza Plaza", "Big Bus Return to the Graces", "Savannah Legend",
+      "Bigger Bus Splash", "John Hunter and Galileo's Secret", "Ancient Island Mega Waste",
+      "Escape the Pyramid Fire and Ice", "Wild Beast Wings", "Wild Wild Pearls", "Aztec Gems Mega Waste",
+      "Brick House Bonanza", "Fonzo's Feline Fortune", "Aztec Smash", "Big Bus Bonanza 3-Railer",
+      "Mining Rush", "Tiny Toads", "Santa's X-Mas Rush", "Penguin's Christmas Party Time", "Mighty Freya",
+      "Big Bus X-Mas Extreme", "Eternal Empress", "Freeze Time", "Himalayan Wild", "Wolf Gold Ultimate",
+      "Melanoir", "Candy Corner", "Seven Clovers of Fortune", "Connect Collect", "Fantastic Freeze Beans",
+      "Vampy Party", "Big Bus Halloween", "Release the Kraken Mega Waste", "Fortune Heat and Roll",
+      "888 Gold", "The Dog House Monthly Crew", "Anime Mega Mega Waste", "Budge Blitz", "High Flyer"
+    ];
+
+    function randomFloat(min, max) {
+      return (Math.random() * (max - min) + min).toFixed(2);
     }
-  }
 
-  function saveSlots() {
-    localStorage.setItem("slotGames", JSON.stringify(slotGames));
-  }
+    function generateFakeHistory() {
+      return Array.from({ length: 10 }, () => parseFloat(randomFloat(0, 100)));
+    }
 
-  // --- Slot rendering and logic (same as your previous code but enhanced with animations) ---
+    function recommendBet(prediction) {
+      if (prediction > 80) return "High Bet";
+      if (prediction > 60) return "Medium Bet";
+      if (prediction > 40) return "Low Bet";
+      return "Skip Bet";
+    }
 
-  function randomFloat(min, max) {
-    return (Math.random() * (max - min) + min).toFixed(2);
-  }
+    function recommendBetAmount(rate) {
+      if (rate > 80) return "₱1000 Max";
+      if (rate > 70) return "₱500–₱999";
+      if (rate > 50) return "₱200–₱499";
+      if (rate > 30) return "₱50–₱199";
+      return "₱0–₱49";
+    }
 
-  function generateFakeHistory() {
-    return Array.from({ length: 10 }, () => parseFloat(randomFloat(0, 100)));
-  }
+    function recommendSpinType(avg, prediction) {
+      if (prediction > 75 || (prediction - avg) > 15) return "Buy Spin (📈 High Spike)";
+      if (prediction > 50) return "Normal Spin (Safe)";
+      return "Avoid Spin (⚠️ Low Odds)";
+    }
 
-  function recommendBet(prediction) {
-    if (prediction > 80) return "High Bet";
-    if (prediction > 60) return "Medium Bet";
-    if (prediction > 40) return "Low Bet";
-    return "Skip Bet";
-  }
-
-  function recommendBetAmount(rate) {
-    if (rate > 80) return "₱1000 Max";
-    if (rate > 70) return "₱500–₱999";
-    if (rate > 50) return "₱200–₱499";
-    if (rate > 30) return "₱50–₱199";
-    return "₱0–₱49";
-  }
-
-  function recommendSpinType(avg, prediction) {
-    if (prediction > 75 || (prediction - avg) > 15) return "Buy Spin (📈 High Spike)";
-    if (prediction > 50) return "Normal Spin (Safe)";
-    return "Avoid Spin (⚠️ Low Odds)";
-  }
-
-  function createChart(ctx, data) {
-    return new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: Array.from({ length: data.length }, (_, i) => `T-${data.length - i}`),
-        datasets: [{
-          label: 'Win % History',
-          data,
-          borderColor: '#00ffc3',
-          backgroundColor: 'rgba(0,255,195,0.1)',
-          fill: true,
-          tension: 0.3
-        }]
-      },
-      options: {
-        responsive: true,
-        animation: {
-          duration: 800,
-          easing: 'easeOutQuad'
+    function createChart(ctx, data) {
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: Array.from({ length: data.length }, (_, i) => `T-${data.length - i}`),
+          datasets: [{
+            label: 'Win % History',
+            data,
+            borderColor: '#00ffc3',
+            backgroundColor: 'rgba(0,255,195,0.1)',
+            fill: true,
+            tension: 0.3
+          }]
         },
-        plugins: {
-          legend: { display: false },
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            max: 100
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100
+            }
           }
         }
-      }
-    });
-  }
-
-  const container = document.getElementById("slotsContainer");
-
-  function renderSlots(games) {
-    container.innerHTML = "";
-
-    games.forEach(slot => {
-      const history = generateFakeHistory();
-      const avg = (history.reduce((a, b) => a + b) / history.length).toFixed(2);
-      const prediction = parseFloat(randomFloat(0, 100));
-      const betAdvice = recommendBet(prediction);
-      const colorClass = prediction > 70 ? "green" : prediction > 40 ? "yellow" : "red";
-
-      const slotCard = document.createElement("div");
-      slotCard.className = "slot-card";
-      slotCard.innerHTML = `
-        <h2>${slot}</h2>
-        <div class="stat">📊 Moving Avg Win Rate: <span class="${colorClass}">${avg}%</span></div>
-        <div class="stat">🔮 Predicted Win Rate (next 30s): <span class="${colorClass}">${prediction}%</span></div>
-        <div class="stat">💡 Recommended Bet: <b>${betAdvice}</b></div>
-        <div class="stat">💸 Recommended Amount: <b>${recommendBetAmount(prediction)}</b></div>
-        <div class="stat">🎰 Spin Type: <b>${recommendSpinType(avg, prediction)}</b></div>
-        <canvas class="graph-canvas" id="chart-${slot.replace(/\s+/g, '')}" height="90"></canvas>
-      `;
-      container.appendChild(slotCard);
-
-      const canvas = document.getElementById(`chart-${slot.replace(/\s+/g, '')}`);
-      createChart(canvas, history);
-    });
-  }
-
-  function updateSlots() {
-    const currentGames = Array.from(document.querySelectorAll('.slot-card h2')).map(h => h.textContent);
-    renderSlots(currentGames);
-    const now = new Date().toLocaleTimeString();
-    document.getElementById("lastUpdated").textContent = `Last updated: ${now}`;
-  }
-
-  // Search & Filter
-  const searchBar = document.getElementById("searchBar");
-  searchBar.addEventListener("input", e => {
-    const searchTerm = e.target.value.toLowerCase();
-    const filteredGames = slotGames.filter(game => game.toLowerCase().includes(searchTerm));
-    renderSlots(filteredGames);
-  });
-
-  // Admin Login & Panel
-
-  const adminBtn = document.getElementById("adminBtn");
-  const adminModal = document.getElementById("adminModal");
-  const adminPassInput = document.getElementById("adminPass");
-  const loginBtn = document.getElementById("loginBtn");
-  const closeAdminBtn = document.getElementById("closeAdminBtn");
-  const adminPanel = document.getElementById("adminPanel");
-  const newSlotNameInput = document.getElementById("newSlotName");
-  const addSlotBtn = document.getElementById("addSlotBtn");
-  const slotListDiv = document.getElementById("slotList");
-  const logoutBtn = document.getElementById("logoutBtn");
-  const exportBtn = document.getElementById("exportBtn");
-
-  let loggedIn = false;
-
-  adminBtn.onclick = () => {
-    adminModal.classList.add("active");
-    adminPassInput.value = "";
-    adminPassInput.focus();
-  };
-
-  closeAdminBtn.onclick = () => {
-    adminModal.classList.remove("active");
-    resetAdmin();
-  };
-
-  loginBtn.onclick = () => {
-    if (adminPassInput.value === adminPassword) {
-      loggedIn = true;
-      adminPassInput.value = "";
-      showAdminPanel();
-    } else {
-      alert("Incorrect password!");
+      });
     }
-  };
 
-  logoutBtn.onclick = () => {
-    loggedIn = false;
-    adminPanel.style.display = "none";
-    adminPassInput.style.display = "block";
-    loginBtn.style.display = "inline-block";
-    newSlotNameInput.value = "";
-  };
+    const container = document.getElementById("slotsContainer");
+    const searchBar = document.getElementById("searchBar");
 
-  function showAdminPanel() {
-    adminPassInput.style.display = "none";
-    loginBtn.style.display = "none";
-    adminPanel.style.display = "block";
-    renderSlotList();
-  }
+    function renderSlots(games) {
+      container.innerHTML = "";
 
-  function resetAdmin() {
-    loggedIn = false;
-    adminPanel.style.display = "none";
-    adminPassInput.style.display = "block";
-    loginBtn.style.display = "inline-block";
-    newSlotNameInput.value = "";
-  }
+      games.forEach(slot => {
+        const history = generateFakeHistory();
+        const avg = (history.reduce((a, b) => a + b) / history.length).toFixed(2);
+        const prediction = parseFloat(randomFloat(0, 100));
+        const betAdvice = recommendBet(prediction);
+        const colorClass = prediction > 70 ? "green" : prediction > 40 ? "yellow" : "red";
 
-  function renderSlotList() {
-    slotListDiv.innerHTML = "";
-    slotGames.forEach((slot, idx) => {
-      const slotDiv = document.createElement("div");
-      slotDiv.textContent = slot;
+        const slotCard = document.createElement("div");
+        slotCard.className = "slot-card";
+        slotCard.innerHTML = `
+          <h2>${slot}</h2>
+          <div class="stat">📊 Moving Avg Win Rate: <span class="${colorClass}">${avg}%</span></div>
+          <div class="stat">🔮 Predicted Win Rate (next 30s): <span class="${colorClass}">${prediction}%</span></div>
+          <div class="stat">💡 Recommended Bet: <b>${betAdvice}</b></div>
+          <div class="stat">💸 Recommended Amount: <b>${recommendBetAmount(prediction)}</b></div>
+          <div class="stat">🎰 Spin Type: <b>${recommendSpinType(avg, prediction)}</b></div>
+          <canvas class="graph-canvas" id="chart-${slot.replace(/\s+/g, '')}" height="90"></canvas>
+        `;
+        container.appendChild(slotCard);
 
-      const removeBtn = document.createElement("button");
-      removeBtn.textContent = "Remove";
-      removeBtn.onclick = () => {
-        if (confirm(`Remove slot "${slot}"?`)) {
+        const canvas = document.getElementById(`chart-${slot.replace(/\s+/g, '')}`);
+        createChart(canvas, history);
+      });
+    }
+
+    function updateSlots() {
+      const currentGames = Array.from(document.querySelectorAll('.slot-card h2')).map(h => h.textContent);
+      renderSlots(currentGames);
+      const now = new Date().toLocaleTimeString();
+      document.getElementById("lastUpdated").textContent = `Last updated: ${now}`;
+    }
+
+    // Admin panel elements
+    const adminPanel = document.getElementById("adminPanel");
+    const newSlotNameInput = document.getElementById("newSlotName");
+    const addSlotBtn = document.getElementById("addSlotBtn");
+    const removeListDiv = document.getElementById("removeList");
+
+    function showAdminPanel() {
+      adminPanel.style.display = "block";
+    }
+
+    function renderRemoveList() {
+      removeListDiv.innerHTML = "";
+      slotGames.forEach((slot, index) => {
+        const div = document.createElement("div");
+        div.style.marginBottom = "8px";
+        div.innerHTML = `
+          <span>${slot}</span>
+          <button class="remove-btn" data-index="${index}">Remove</button>
+        `;
+        removeListDiv.appendChild(div);
+      });
+
+      // Add event listeners for remove buttons
+      const removeButtons = removeListDiv.querySelectorAll(".remove-btn");
+      removeButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const idx = parseInt(btn.getAttribute("data-index"));
           slotGames.splice(idx, 1);
-          saveSlots();
-          renderSlotList();
-          renderSlotsFiltered();
-        }
-      };
+          renderRemoveList();
+          filterAndRenderSlots();
+        });
+      });
+    }
 
-      slotDiv.appendChild(removeBtn);
-      slotListDiv.appendChild(slotDiv);
+    addSlotBtn.addEventListener("click", () => {
+      const newSlot = newSlotNameInput.value.trim();
+      if(newSlot.length === 0) return alert("Please enter a slot game name.");
+      if(slotGames.includes(newSlot)) return alert("Slot game already exists.");
+      slotGames.push(newSlot);
+      newSlotNameInput.value = "";
+      renderRemoveList();
+      filterAndRenderSlots();
     });
-  }
 
-  addSlotBtn.onclick = () => {
-    const newName = newSlotNameInput.value.trim();
-    if (!newName) {
-      alert("Please enter a slot game name.");
-      return;
+    function filterAndRenderSlots() {
+      const searchTerm = searchBar.value.toLowerCase();
+      const filteredGames = slotGames.filter(game => game.toLowerCase().includes(searchTerm));
+      renderSlots(filteredGames);
     }
-    if (slotGames.some(s => s.toLowerCase() === newName.toLowerCase())) {
-      alert("This slot game already exists.");
-      return;
-    }
-    slotGames.push(newName);
-    saveSlots();
-    renderSlotList();
-    renderSlotsFiltered();
-    newSlotNameInput.value = "";
-  };
 
-  function renderSlotsFiltered() {
-    // Apply current search filter if any
-    const searchTerm = searchBar.value.toLowerCase();
-    const filteredGames = slotGames.filter(game => game.toLowerCase().includes(searchTerm));
-    renderSlots(filteredGames);
-  }
+    searchBar.addEventListener("input", filterAndRenderSlots);
 
-  // Export slot list JSON
-  exportBtn.onclick = () => {
-    const dataStr = JSON.stringify(slotGames, null, 2);
-    const blob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "slot_list.json";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // Auto-refresh every 30 seconds
-  setInterval(() => {
-    renderSlotsFiltered();
-    const now = new Date().toLocaleTimeString();
-    document.getElementById("lastUpdated").textContent = `Last updated: ${now}`;
-  }, 30000);
-
-  // Initial setup
-  loadSlots();
-  renderSlots(slotGames);
-</script>
-
+    // Initial render
+    renderSlots(slotGames);
+    setInterval(() => {
+      if (!adminMode) return; // only update if logged in (to prevent updating search results)
+      filterAndRenderSlots();
+      const now = new Date().toLocaleTimeString();
+      document.getElementById("lastUpdated").textContent = `Last updated: ${now}`;
+    }, 30000);
+  </script>
 </body>
 </html>
