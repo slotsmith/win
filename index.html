@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Slot Smith Tracker</title>
+  <title>Slot Smith Pro</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -19,31 +19,27 @@
       margin-bottom: 20px;
       color: #00ffc3;
     }
-    #searchContainer {
-      text-align: center;
-      margin-bottom: 40px;
-    }
-    #searchInput {
-      padding: 10px 15px;
-      width: 300px;
-      border-radius: 10px 0 0 10px;
+    #searchBar {
+      display: block;
+      margin: 0 auto 30px auto;
+      width: 60%;
+      max-width: 600px;
+      padding: 12px 20px;
+      font-size: 1.1rem;
+      border-radius: 15px;
       border: none;
-      font-size: 1rem;
       outline: none;
+      box-shadow: 0 0 10px #00ffc3;
+      background: #2c2c3c;
+      color: #fff;
+      transition: box-shadow 0.3s ease;
     }
-    #searchButton {
-      padding: 10px 20px;
-      border-radius: 0 10px 10px 0;
-      border: none;
-      background-color: #00ffc3;
-      color: #1f1f2e;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 1rem;
-      transition: background-color 0.3s ease;
+    #searchBar::placeholder {
+      color: #66fff0cc;
     }
-    #searchButton:hover {
-      background-color: #00d4a3;
+    #searchBar:focus {
+      box-shadow: 0 0 15px #00ffc3;
+      background: #39394a;
     }
     .slots-container {
       display: grid;
@@ -59,6 +55,7 @@
     .slot-card h2 {
       margin: 0 0 20px;
       color: #00d4ff;
+      word-break: break-word;
     }
     .stat {
       margin: 8px 0;
@@ -67,155 +64,60 @@
     .graph-canvas {
       margin-top: 20px;
       width: 100% !important;
+      max-height: 90px !important;
+      height: auto !important;
     }
-    .green { color: #00ffb1; }
-    .yellow { color: #ffd93b; }
-    .red { color: #ff4c4c; }
+    .green {
+      color: #00ffb3;
+      font-weight: 600;
+    }
+    .yellow {
+      color: #ffd966;
+      font-weight: 600;
+    }
+    .red {
+      color: #ff6666;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
-  <h1>🎰 Slot Smith Tracker</h1>
-
-  <div id="searchContainer">
-    <input type="text" id="searchInput" placeholder="Search slot games..." />
-    <button id="searchButton">Search</button>
-  </div>
-
+  <h1>🎰 Slot Smith Pro</h1>
+  <input type="text" id="searchBar" placeholder="Search for a slot game..." />
   <div class="slots-container" id="slotsContainer"></div>
 
   <script>
-    // Array of objects with popularity score (example values)
-    const slotGamesWithPopularity = [
-      { name: "Gates of Olympus", popularity: 98 },
-      { name: "Sweet Bonanza", popularity: 95 },
-      { name: "Starlight Princess", popularity: 90 },
-      { name: "Sugar Rush", popularity: 88 },
-      { name: "Big Bass Splash", popularity: 85 },
-      { name: "Wild West Gold", popularity: 83 },
-      { name: "The Dog House", popularity: 80 },
-      { name: "Power of Thor Megaways", popularity: 78 },
-      { name: "Joker’s Jewels", popularity: 75 },
-      { name: "Floating Dragon", popularity: 73 },
-      { name: "Madame Destiny Megaways", popularity: 70 },
-      { name: "John Hunter series", popularity: 68 },
-      { name: "Chilli Heat", popularity: 65 },
-      { name: "Buffalo King Megaways", popularity: 63 },
-      { name: "Mustang Gold", popularity: 60 },
-      { name: "5 Lions series", popularity: 58 },
-      { name: "Aztec Gems", popularity: 55 },
-      { name: "Pyramid Bonanza", popularity: 53 },
-      { name: "Lucky Lightning", popularity: 50 },
-      { name: "Gates of Olympus Super Scatter", popularity: 48 },
-      { name: "Mahjong Wins Super Scatter", popularity: 46 },
-      { name: "Wild West Gold Blazing Bounty", popularity: 44 },
-      { name: "Gates of Hades", popularity: 42 },
-      { name: "The Dog House – Royal Hunt", popularity: 40 },
-      { name: "Book of Monsters", popularity: 38 },
-      { name: "Big Bass Bonanza 1000", popularity: 36 },
-      { name: "Starlight Princess 1000", popularity: 35 },
-      { name: "Gates of Olympus 1000", popularity: 34 },
-      { name: "Sugar Rush 1000", popularity: 33 },
-      { name: "Sweet Bonanza 1000", popularity: 32 },
-      { name: "Wisdom of Athena 1000", popularity: 31 },
-      { name: "Gates of Olympus Xmas 1000", popularity: 30 },
-      { name: "Hades Inferno 1000", popularity: 29 },
-      { name: "Lucky Tiger 1000", popularity: 28 },
-      { name: "Irish Crown", popularity: 27 },
-      { name: "Zeus vs Hades Gods of War", popularity: 26 },
-      { name: "Gates of Gatotkacha 1000", popularity: 25 },
-      { name: "Gates of Gatotkacha", popularity: 24 },
-      { name: "Candy Blitz Bombs", popularity: 23 },
-      { name: "Fire Portals", popularity: 22 },
-      { name: "Sugar Rush X-Max", popularity: 21 },
-      { name: "Candy Blitz", popularity: 20 },
-      { name: "Rujak Bonanza", popularity: 19 },
-      { name: "Wildies", popularity: 18 },
-      { name: "Sweet Bonanza X-Max", popularity: 17 },
-      { name: "Happy Fortune", popularity: 16 },
-      { name: "Sticky Bees", popularity: 15 },
-      { name: "Cyan Mania", popularity: 14 },
-      { name: "Forge of Olympus", popularity: 13 },
-      { name: "Wild Bison Church", popularity: 12 },
-      { name: "The Dog House Dog or Alive", popularity: 11 },
-      { name: "Mustang Gold Mega Waste", popularity: 10 },
-      { name: "Will of Gold", popularity: 9 },
-      { name: "Gates of Olympus Dice", popularity: 8 },
-      { name: "Aztec Treasure Hunt", popularity: 7 },
-      { name: "Angel vs Sinner", popularity: 6 },
-      { name: "Power of Ninja", popularity: 5 },
-      { name: "Six Joker", popularity: 4 },
-      { name: "Twilight Princess", popularity: 3 },
-      { name: "Cyber Heist", popularity: 2 },
-      { name: "Five Lions Mega Waste", popularity: 1 },
-      // ... you can assign more or adjust these values as you want
-      { name: "Big Bus Bay at the Graces", popularity: 50 },
-      { name: "Heart of Cleopatra", popularity: 49 },
-      { name: "The Dog House Mega Waste", popularity: 48 },
-      { name: "Release the Bison", popularity: 47 },
-      { name: "Power of Thor Mega Waste", popularity: 46 },
-      { name: "Buffalo King Mega Waste", popularity: 45 },
-      { name: "Chest of Kaishen", popularity: 44 },
-      { name: "Five Lions 2 Mega Waste", popularity: 43 },
-      { name: "Greedy Fortune Pig", popularity: 42 },
-      { name: "Majestic Express Gold Run", popularity: 41 },
-      { name: "Pig Farm", popularity: 40 },
-      { name: "Jumbo Safari", popularity: 39 },
-      { name: "Fiesta Fortune", popularity: 38 },
-      { name: "Sleeping Dragon", popularity: 37 },
-      { name: "Resurrecting Riches", popularity: 36 },
-      { name: "Witch Heart", popularity: 35 },
-      { name: "Super Scatter", popularity: 34 },
-      { name: "Cash Surge", popularity: 33 },
-      { name: "Five Lions Reborn", popularity: 32 },
-      { name: "Ride the Lightning", popularity: 31 },
-      { name: "Bandit Mega Waste", popularity: 30 },
-      { name: "Joker's Jewels Cash", popularity: 29 },
-      { name: "Blitz Super Wheel", popularity: 28 },
-      { name: "Triple Pot Gold", popularity: 27 },
-      { name: "Wild Wild Joker", popularity: 26 },
-      { name: "Lucky Wild Pop", popularity: 25 },
-      { name: "Raging Waterfall", popularity: 24 },
-      { name: "Pepe's Pepperoni Pizza Plaza", popularity: 23 },
-      { name: "Big Bus Return to the Graces", popularity: 22 },
-      { name: "Savannah Legend", popularity: 21 },
-      { name: "Bigger Bus Splash", popularity: 20 },
-      { name: "John Hunter and Galileo's Secret", popularity: 19 },
-      { name: "Ancient Island Mega Waste", popularity: 18 },
-      { name: "Escape the Pyramid Fire and Ice", popularity: 17 },
-      { name: "Wild Beast Wings", popularity: 16 },
-      { name: "Aztec Gems Mega Waste", popularity: 15 },
-      { name: "Brick House Bonanza", popularity: 14 },
-      { name: "Fonzo's Feline Fortune", popularity: 13 },
-      { name: "Aztec Smash", popularity: 12 },
-      { name: "Big Bus Bonanza 3-Railer", popularity: 11 },
-      { name: "Mining Rush", popularity: 10 },
-      { name: "Tiny Toads", popularity: 9 },
-      { name: "Santa's X-Mas Rush", popularity: 8 },
-      { name: "Penguin's Christmas Party Time", popularity: 7 },
-      { name: "Mighty Freya", popularity: 6 },
-      { name: "Big Bus X-Mas Extreme", popularity: 5 },
-      { name: "Eternal Empress", popularity: 4 },
-      { name: "Freeze Time", popularity: 3 },
-      { name: "Himalayan Wild", popularity: 2 },
-      { name: "Wolf Gold Ultimate", popularity: 1 },
-      { name: "Melanoir", popularity: 0 },
-      { name: "Candy Corner", popularity: 0 },
-      { name: "Seven Clovers of Fortune", popularity: 0 },
-      { name: "Connect Collect", popularity: 0 },
-      { name: "Fantastic Freeze Beans", popularity: 0 },
-      { name: "Vampy Party", popularity: 0 },
-      { name: "Big Bus Halloween", popularity: 0 },
-      { name: "Release the Kraken Mega Waste", popularity: 0 },
-      { name: "Fortune Heat and Roll", popularity: 0 },
-      { name: "888 Gold", popularity: 0 },
-      { name: "The Dog House Monthly Crew", popularity: 0 },
-      { name: "Anime Mega Mega Waste", popularity: 0 },
-      { name: "Budge Blitz", popularity: 0 },
-      { name: "High Flyer", popularity: 0 }
+    const slotGames = [
+      "Sweet Bonanza", "Gates of Olympus", "Starlight Princess", "Sugar Rush", "Big Bass Splash",
+      "Wild West Gold", "The Dog House", "Power of Thor Megaways", "Joker’s Jewels", "Floating Dragon",
+      "Madame Destiny Megaways", "John Hunter series", "Chilli Heat", "Buffalo King Megaways", "Mustang Gold",
+      "5 Lions series", "Aztec Gems", "Pyramid Bonanza", "Lucky Lightning", "Irish Crown",
+      "Gates of Olympus Super Scatter", "Mahjong Wins Super Scatter", "Wild West Gold Blazing Bounty",
+      "Gates of Hades", "The Dog House – Royal Hunt", "Book of Monsters", "Big Bass Bonanza 1000",
+      "Starlight Princess 1000", "Gates of Olympus 1000", "Sugar Rush 1000", "Sweet Bonanza 1000",
+      "Wisdom of Athena 1000", "Gates of Olympus Xmas 1000", "Hades Inferno 1000", "Lucky Tiger 1000",
+      "Zeus vs Hades Gods of War", "Gates of Gatotkacha 1000", "Gates of Olympus X-Max 1000",
+      "Gates of Gatotkacha", "Candy Blitz Bombs", "Fire Portals", "Sugar Rush X-Max", "Candy Blitz",
+      "Rujak Bonanza", "Wildies", "Sweet Bonanza X-Max", "Happy Fortune", "Wisdom of Athena", "Sticky Bees",
+      "Cyan Mania", "Forge of Olympus", "Wild Bison Church", "The Dog House Dog or Alive",
+      "Mustang Gold Mega Waste", "Will of Gold", "Gates of Olympus Dice", "Aztec Treasure Hunt",
+      "Angel vs Sinner", "Power of Ninja", "Six Joker", "Twilight Princess", "Cyber Heist",
+      "Five Lions Mega Waste", "Big Bus Bay at the Graces", "Heart of Cleopatra", "The Dog House Mega Waste",
+      "Release the Bison", "Power of Thor Mega Waste", "Buffalo King Mega Waste", "Chest of Kaishen",
+      "Five Lions 2 Mega Waste", "Greedy Fortune Pig", "Majestic Express Gold Run", "Pig Farm",
+      "Jumbo Safari", "Fiesta Fortune", "Sleeping Dragon", "Resurrecting Riches", "Witch Heart",
+      "Super Scatter", "Cash Surge", "Five Lions Reborn", "Ride the Lightning", "Bandit Mega Waste",
+      "Joker's Jewels Cash", "Blitz Super Wheel", "Triple Pot Gold", "Wild Wild Joker", "Lucky Wild Pop",
+      "Raging Waterfall", "Pepe's Pepperoni Pizza Plaza", "Big Bus Return to the Graces", "Savannah Legend",
+      "Bigger Bus Splash", "John Hunter and Galileo's Secret", "Ancient Island Mega Waste",
+      "Escape the Pyramid Fire and Ice", "Wild Beast Wings", "Wild Wild Pearls", "Aztec Gems Mega Waste",
+      "Brick House Bonanza", "Fonzo's Feline Fortune", "Aztec Smash", "Big Bus Bonanza 3-Railer",
+      "Mining Rush", "Tiny Toads", "Santa's X-Mas Rush", "Penguin's Christmas Party Time", "Mighty Freya",
+      "Big Bus X-Mas Extreme", "Eternal Empress", "Freeze Time", "Himalayan Wild", "Wolf Gold Ultimate",
+      "Melanoir", "Candy Corner", "Seven Clovers of Fortune", "Connect Collect", "Fantastic Freeze Beans",
+      "Vampy Party", "Big Bus Halloween", "Release the Kraken Mega Waste", "Fortune Heat and Roll",
+      "888 Gold", "The Dog House Monthly Crew", "Anime Mega Mega Waste", "Budge Blitz", "High Flyer"
     ];
-
-    // Sort descending by popularity before rendering
-    slotGamesWithPopularity.sort((a, b) => b.popularity - a.popularity);
 
     function randomFloat(min, max) {
       return (Math.random() * (max - min) + min).toFixed(2);
@@ -250,46 +152,37 @@
       new Chart(ctx, {
         type: 'line',
         data: {
-          labels: data.map((_, i) => i + 1),
+          labels: Array.from({ length: data.length }, (_, i) => `T-${data.length - i}`),
           datasets: [{
-            label: 'Win Rate %',
-            data: data,
+            label: 'Win % History',
+            data,
             borderColor: '#00ffc3',
-            backgroundColor: 'rgba(0,255,195,0.2)',
+            backgroundColor: 'rgba(0,255,195,0.1)',
             fill: true,
-            tension: 0.3,
-            pointRadius: 3,
-            pointBackgroundColor: '#00ffc3',
+            tension: 0.3
           }]
         },
         options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+          },
           scales: {
             y: {
-              min: 0,
-              max: 100,
-              ticks: { color: '#00ffc3' },
-              grid: { color: '#333' }
-            },
-            x: {
-              ticks: { color: '#00ffc3' },
-              grid: { color: '#333' }
+              beginAtZero: true,
+              max: 100
             }
-          },
-          plugins: { legend: { labels: { color: '#00ffc3' } } },
-          responsive: true,
-          maintainAspectRatio: false
+          }
         }
       });
     }
 
     const container = document.getElementById("slotsContainer");
-    const searchInput = document.getElementById("searchInput");
-    const searchButton = document.getElementById("searchButton");
 
-    function renderSlots(filteredSlots) {
-      container.innerHTML = '';
-      filteredSlots.forEach(slotObj => {
-        const slot = slotObj.name;
+    function renderSlots(games) {
+      container.innerHTML = ""; // clear before rendering
+
+      games.forEach(slot => {
         const history = generateFakeHistory();
         const avg = (history.reduce((a, b) => a + b) / history.length).toFixed(2);
         const prediction = randomFloat(0, 100);
@@ -305,7 +198,7 @@
           <div class="stat">💡 Recommended Bet: <b>${betAdvice}</b></div>
           <div class="stat">💸 Recommended Amount: <b>${recommendBetAmount(prediction)}</b></div>
           <div class="stat">🎰 Spin Type: <b>${recommendSpinType(avg, prediction)}</b></div>
-          <canvas class="graph-canvas" id="chart-${slot.replace(/\s+/g, '')}" height="120"></canvas>
+          <canvas class="graph-canvas" id="chart-${slot.replace(/\s+/g, '')}" height="90"></canvas>
         `;
 
         container.appendChild(slotCard);
@@ -315,28 +208,16 @@
       });
     }
 
-    function filterSlots() {
-      const query = searchInput.value.toLowerCase().trim();
-      if (!query) {
-        renderSlots(slotGamesWithPopularity);
-        return;
-      }
-      const filtered = slotGamesWithPopularity.filter(game =>
-        game.name.toLowerCase().includes(query)
-      );
-      renderSlots(filtered);
-    }
+    // Initial render with all games
+    renderSlots(slotGames);
 
-    searchButton.addEventListener("click", filterSlots);
-
-    searchInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        filterSlots();
-      }
+    // Search functionality
+    const searchBar = document.getElementById("searchBar");
+    searchBar.addEventListener("input", (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      const filteredGames = slotGames.filter(game => game.toLowerCase().includes(searchTerm));
+      renderSlots(filteredGames);
     });
-
-    // Initial render all slots sorted by popularity
-    renderSlots(slotGamesWithPopularity);
   </script>
 </body>
 </html>
