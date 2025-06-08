@@ -63,22 +63,15 @@
       font-weight: bold;
       margin-bottom: 6px;
     }
+    .prediction {
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #0af;
+    }
     .spin-type {
       font-style: italic;
       color: #ffd966;
       margin-top: 6px;
-    }
-    .prediction {
-      margin-top: 10px;
-      font-weight: bold;
-      font-size: 16px;
-      color: #00ccff;
-    }
-    .recommended-bet {
-      margin-top: 8px;
-      font-weight: bold;
-      font-size: 15px;
-      color: #ffcc00;
     }
     .advice { margin-top: 10px; font-weight: bold; }
     .good { color: #0f0; }
@@ -106,6 +99,23 @@
   <script>
     const providers = {
       "Pragmatic Play": [
+        "Irish Crown",
+        "Gates of Olympus Super Scatter",
+        "Mahjong Wins Super Scatter",
+        "Wild West Gold Blazing Bounty",
+        "Gates of Hades",
+        "The Dog House – Royal Hunt",
+        "Book of Monsters",
+        "Big Bass Bonanza 1000",
+        "Starlight Princess 1000",
+        "Gates of Olympus 1000",
+        "Sugar Rush 1000",
+        "Sweet Bonanza 1000",
+        "Wisdom of Athena 1000",
+        "Gates of Olympus Xmas 1000",
+        "Hades Inferno 1000",
+        "Big Bass Bonanza 1000",
+        "Lucky Tiger 1000",
         "Sweet Bonanza",
         "Sugar Rush",
         "Gates of Olympus",
@@ -118,83 +128,33 @@
         "Joker’s Jewels",
         "Floating Dragon",
         "Madame Destiny Megaways",
-        "John Hunter series",
+        "John Hunter and the Tomb of the Scarab Queen",
         "Chilli Heat",
         "Buffalo King Megaways",
         "Mustang Gold",
-        "5 Lions series",
+        "5 Lions",
         "Aztec Gems",
         "Pyramid Bonanza",
-        "Lucky Lightning",
-
-        "Irish Crown",
-        "Gates of Olympus Super Scatter",
-        "Mahjong Wins Super Scatter",
-        "Wild West Gold Blazing Bounty",
-        "Gates of Hades",
-        "The Dog House – Royal Hunt",
-        "Book of Monsters",
-        "Big Bass Bonanza 1000",
-
-        "Starlight Princess 1000",
-        "Gates of Olympus 1000",
-        "Sugar Rush 1000",
-        "Sweet Bonanza 1000",
-        "Wisdom of Athena 1000",
-        "Gates of Olympus Xmas 1000",
-        "Hades Inferno 1000",
-        "Big Bass Bonanza 1000",
-        "Lucky Tiger 1000",
+        "Lucky Lightning"
       ]
     };
 
-    const maxBetAmounts = {
-      "Sweet Bonanza": 1000,
-      "Sugar Rush": 900,
-      "Gates of Olympus": 1200,
-      "Starlight Princess": 1100,
-      "Big Bass Splash": 800,
-      "Fruit Party": 700,
-      "Wild West Gold": 1000,
-      "The Dog House": 950,
-      "Power of Thor Megaways": 1000,
-      "Joker’s Jewels": 850,
-      "Floating Dragon": 900,
-      "Madame Destiny Megaways": 950,
-      "John Hunter series": 1000,
-      "Chilli Heat": 900,
-      "Buffalo King Megaways": 1100,
-      "Mustang Gold": 900,
-      "5 Lions series": 800,
-      "Aztec Gems": 750,
-      "Pyramid Bonanza": 700,
-      "Lucky Lightning": 700,
-      "Irish Crown": 1200,
-      "Gates of Olympus Super Scatter": 1300,
-      "Mahjong Wins Super Scatter": 1250,
-      "Wild West Gold Blazing Bounty": 1150,
-      "Gates of Hades": 1200,
-      "The Dog House – Royal Hunt": 1100,
-      "Book of Monsters": 900,
-      "Big Bass Bonanza 1000": 1000,
-      "Starlight Princess 1000": 1100,
-      "Gates of Olympus 1000": 1200,
-      "Sugar Rush 1000": 900,
-      "Sweet Bonanza 1000": 1000,
-      "Wisdom of Athena 1000": 850,
-      "Gates of Olympus Xmas 1000": 1200,
-      "Hades Inferno 1000": 1150,
-      "Lucky Tiger 1000": 900,
-    };
-
-    const allSlots = Object.values(providers).flat();
+    const allSlots = providers["Pragmatic Play"];
     const slotHistories = {}, slotSpinHistories = {}, charts = {};
     const spinTypes = ["Buy Spin", "Normal Spin"];
     let isUpdating = true;
 
+    const slotScatterData = {};
     allSlots.forEach(slot => {
       slotHistories[slot] = [];
       slotSpinHistories[slot] = [];
+      slotScatterData[slot] = {
+        lastBetAmount: 0,
+        lastScatterHit: false,
+        lastScatterBet: null,
+        normalSpinsSinceScatter: 0,
+        highestWin: 0,
+      };
     });
 
     function getRandomWinRate() {
@@ -202,6 +162,15 @@
     }
     function getRandomSpinType() {
       return spinTypes[Math.floor(Math.random() * spinTypes.length)];
+    }
+    function didScatterHit(spinType) {
+      if (spinType === "Normal Spin") {
+        return Math.random() < 0.20;
+      }
+      return false;
+    }
+    function getRandomBetAmount() {
+      return Math.floor(Math.random() * 6000) + 1;
     }
     function formatTime() {
       return new Date().toLocaleTimeString('en-US',{hour12:false});
@@ -211,6 +180,73 @@
       const sum = arr.slice(0, n).reduce((a, v) => a + v.rate, 0);
       return +(sum / n).toFixed(2);
     }
+
+    // New function: Predict win rate based on recent trend
+    function predictWinRate(history) {
+      if (history.length < 3) return movingAverage(history);
+
+      const last = history[0].rate;
+      const prev = history[1].rate;
+      const prev2 = history[2].rate;
+
+      const trend = (last - prev) + (prev - prev2);
+      const avg = movingAverage(history);
+
+      const factor = 0.6; // sensitivity factor
+      let prediction = avg + trend * factor;
+
+      prediction = Math.min(100, Math.max(0, prediction));
+
+      return prediction;
+    }
+
+    function getRecommendedBetAmount(predictedRate, slotName) {
+      // Assign max bet amounts based on slot (example values, adjust as needed)
+      const maxBetMap = {
+        "Irish Crown": 5000,
+        "Gates of Olympus Super Scatter": 6000,
+        "Mahjong Wins Super Scatter": 4000,
+        "Wild West Gold Blazing Bounty": 5500,
+        "Gates of Hades": 4500,
+        "The Dog House – Royal Hunt": 4000,
+        "Book of Monsters": 3500,
+        "Big Bass Bonanza 1000": 6000,
+        "Starlight Princess 1000": 6500,
+        "Gates of Olympus 1000": 6000,
+        "Sugar Rush 1000": 5800,
+        "Sweet Bonanza 1000": 6200,
+        "Wisdom of Athena 1000": 5000,
+        "Gates of Olympus Xmas 1000": 6000,
+        "Hades Inferno 1000": 5700,
+        "Lucky Tiger 1000": 5000,
+        "Sweet Bonanza": 4000,
+        "Sugar Rush": 3500,
+        "Gates of Olympus": 5500,
+        "Starlight Princess": 6000,
+        "Big Bass Splash": 3000,
+        "Fruit Party": 3200,
+        "Wild West Gold": 5000,
+        "The Dog House": 3500,
+        "Power of Thor Megaways": 4800,
+        "Joker’s Jewels": 3000,
+        "Floating Dragon": 3000,
+        "Madame Destiny Megaways": 5200,
+        "John Hunter and the Tomb of the Scarab Queen": 4000,
+        "Chilli Heat": 3200,
+        "Buffalo King Megaways": 5500,
+        "Mustang Gold": 4500,
+        "5 Lions": 2800,
+        "Aztec Gems": 2800,
+        "Pyramid Bonanza": 2500,
+        "Lucky Lightning": 2300
+      };
+
+      const maxBet = maxBetMap[slotName] || 3000;
+
+      // Bet amount is proportional to predicted win rate (from 0 to maxBet)
+      return Math.round((predictedRate / 100) * maxBet);
+    }
+
     function destroyCharts() {
       Object.values(charts).forEach(c => c && c.destroy());
       Object.keys(charts).forEach(k => delete charts[k]);
@@ -222,19 +258,19 @@
       destroyCharts();
       const search = document.getElementById("searchInput").value.toLowerCase();
 
-      const provider = "Pragmatic Play";
-
-      providers[provider].filter(s => s.toLowerCase().includes(search)).slice(0, 20)
+      allSlots.filter(s => s.toLowerCase().includes(search))
         .forEach(slot => {
           const h = slotHistories[slot];
           if (!h.length) return;
 
           const avg = movingAverage(h);
+          const prediction = predictWinRate(h);
+          const predictionStr = prediction.toFixed(2);
           const spin = slotSpinHistories[slot][0];
           const time = h[0].time;
           const advice = avg > 50 ? {cls:"good", txt:"Good time to bet!"}
                                   : {cls:"wait", txt:"Better to wait."};
-          const rateColor = avg>50 ? "#0f0":"#f55";
+          const rateColor = avg > 50 ? "#0f0" : "#f55";
 
           // Determine recommended spin type based on avg win rate
           let recommendedSpin;
@@ -246,101 +282,115 @@
             recommendedSpin = "Do Not Spin";
           }
 
-          // Winning percentage prediction for next 30 seconds based on avg
-          const prediction = avg.toFixed(2);
-
-          // Recommended bet amount based on prediction and max bet for slot
-          const maxBet = maxBetAmounts[slot] || 1000;
-          const recommendedBet = Math.round((avg / 100) * maxBet);
+          const recommendedBet = getRecommendedBetAmount(prediction, slot);
 
           const div = document.createElement("div");
           div.className = "slot-card";
           div.innerHTML = `
-            <h2>${slot} (${provider})</h2>
+            <h2>${slot} (Pragmatic Play)</h2>
             <div class="winrate" style="color:${rateColor}">
               Moving Avg Win Rate: ${avg}% (last: ${h[0].rate}% at ${time})
             </div>
-            <div class="spin-type">Recommended Spin Type: <b>${recommendedSpin}</b></div>
             <div class="prediction">
-              🎯 Winning Percentage Prediction (Next 30s): ${prediction}%
+              Predicted Win Rate (next 30s): ${predictionStr}%
             </div>
-            <div class="recommended-bet">
-              💰 Recommended Bet Amount: <b>${recommendedBet.toLocaleString()}</b>
+            <div>
+              <div>Last Spin Type: <b>${spin}</b></div>
+              <div class="spin-type">Recommended Spin Type: <b>${recommendedSpin}</b></div>
+              <div class="spin-type">Recommended Bet Amount: <b>₱${recommendedBet}</b></div>
             </div>
-            <canvas id="chart-${slot.replace(/\s+/g, '')}"></canvas>
+            <div class="advice ${advice.cls}">${advice.txt}</div>
+            <div class="progress-bar" title="Win rate bar">
+              <div class="fill" style="width:${avg}%"></div>
+            </div>
+            <canvas id="chart_${slot.replace(/\s/g, '')}" aria-label="Win rate chart for ${slot}" role="img"></canvas>
           `;
-
           container.appendChild(div);
 
-          const ctx = div.querySelector("canvas").getContext("2d");
+          // Create chart
+          const ctx = document.getElementById(`chart_${slot.replace(/\s/g, '')}`).getContext('2d');
           charts[slot] = new Chart(ctx, {
             type: 'line',
             data: {
-              labels: h.map(x => x.time).reverse(),
+              labels: h.map(d => d.time).reverse(),
               datasets: [{
                 label: 'Win Rate %',
-                data: h.map(x => x.rate).reverse(),
-                borderColor: rateColor,
-                backgroundColor: 'rgba(0,204,102,0.3)',
+                data: h.map(d => d.rate).reverse(),
+                borderColor: '#0f0',
+                backgroundColor: 'rgba(0,255,0,0.2)',
                 fill: true,
                 tension: 0.3,
-                pointRadius: 3
+                pointRadius: 3,
               }]
             },
-            options:{
-              animation: {duration: 0},
-              responsive:true,
-              plugins: {legend: {display:false}},
+            options: {
+              animation: false,
               scales: {
-                y: {
-                  min: 0,
-                  max: 100,
-                  ticks: {stepSize: 20}
-                }
-              }
+                y: { min: 0, max: 100, ticks: { stepSize: 10 } },
+                x: { display: false }
+              },
+              plugins: { legend: { display: false } },
+              maintainAspectRatio: false,
             }
           });
         });
     }
 
-    function updateSlotData() {
+    function updateData() {
+      if (!isUpdating) return;
+      const now = formatTime();
+      document.getElementById("lastUpdated").textContent = `Last updated: ${now}`;
+
       allSlots.forEach(slot => {
-        const winRate = getRandomWinRate();
+        const rate = getRandomWinRate();
+        const spinType = getRandomSpinType();
 
-        const historyArr = slotHistories[slot];
-        const spinHistArr = slotSpinHistories[slot];
+        // Update histories (keep last 10 records)
+        slotHistories[slot].unshift({rate, time: now});
+        if (slotHistories[slot].length > 10) slotHistories[slot].pop();
 
-        historyArr.unshift({rate: winRate, time: formatTime()});
-        spinHistArr.unshift(getRandomSpinType());
+        slotSpinHistories[slot].unshift(spinType);
+        if (slotSpinHistories[slot].length > 1) slotSpinHistories[slot].pop();
 
-        if(historyArr.length > 20) historyArr.pop();
-        if(spinHistArr.length > 20) spinHistArr.pop();
+        // Update scatter and other data
+        const scatterHit = didScatterHit(spinType);
+        const scatterData = slotScatterData[slot];
+        scatterData.lastBetAmount = getRandomBetAmount();
+        scatterData.lastScatterHit = scatterHit;
+
+        if (scatterHit) {
+          scatterData.lastScatterBet = scatterData.lastBetAmount;
+          scatterData.normalSpinsSinceScatter = 0;
+        } else {
+          scatterData.normalSpinsSinceScatter++;
+        }
+        if (rate > scatterData.highestWin) {
+          scatterData.highestWin = rate;
+        }
       });
-      document.getElementById("lastUpdated").textContent = `Last updated: ${formatTime()}`;
+
       renderSlots();
     }
 
     document.getElementById("searchInput").addEventListener("input", renderSlots);
-
-    const toggleBtn = document.getElementById("toggleUpdatesBtn");
-    toggleBtn.addEventListener("click", () => {
+    document.getElementById("toggleUpdatesBtn").addEventListener("click", () => {
       isUpdating = !isUpdating;
-      toggleBtn.textContent = isUpdating ? "Pause Updates ⏸️" : "Resume Updates ▶️";
-      if (isUpdating) {
-        updateSlotData();
-        intervalId = setInterval(() => {
-          updateSlotData();
-        }, 30000);
-      } else {
-        clearInterval(intervalId);
-      }
+      document.getElementById("toggleUpdatesBtn").textContent = isUpdating ? "Pause Updates ⏸️" : "Resume Updates ▶️";
     });
 
-    let intervalId = setInterval(() => {
-      if (isUpdating) updateSlotData();
-    }, 30000);
+    // Initial fill of histories with dummy data
+    allSlots.forEach(slot => {
+      for(let i=0; i<7; i++){
+        slotHistories[slot].push({
+          rate: +(Math.random()*100).toFixed(2),
+          time: formatTime()
+        });
+      }
+      slotSpinHistories[slot].push(getRandomSpinType());
+    });
 
-    updateSlotData();
+    renderSlots();
+    setInterval(updateData, 30000);
   </script>
 </body>
 </html>
