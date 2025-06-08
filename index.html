@@ -265,26 +265,19 @@
   const backToLoginFromReset = document.getElementById('backToLoginFromReset');
 
   const logoutBtn = document.getElementById('logoutBtn');
-  const searchBar = document.getElementById('searchBar');
   const slotsContainer = document.getElementById('slotsContainer');
+  const lastUpdated = document.getElementById('lastUpdated');
+
+  const searchBar = document.getElementById('searchBar');
 
   const adminPanel = document.getElementById('adminPanel');
   const adminTextarea = document.getElementById('adminTextarea');
   const saveSlotsBtn = document.getElementById('saveSlotsBtn');
 
-  // Globals
-  let currentUser = null;
-  let slotGames = [];
-
-  // Load users from localStorage or return empty array
+  // Load users from localStorage
   function loadUsers() {
-    const usersJson = localStorage.getItem(USERS_KEY);
-    if (!usersJson) return [];
-    try {
-      return JSON.parse(usersJson);
-    } catch {
-      return [];
-    }
+    const raw = localStorage.getItem(USERS_KEY);
+    return raw ? JSON.parse(raw) : [];
   }
 
   // Save users to localStorage
@@ -292,117 +285,81 @@
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
   }
 
-  // Load slot games list from localStorage or default list if none
-  function loadSlotGames() {
-    const slotsJson = localStorage.getItem(SLOTS_KEY);
-    if (!slotsJson) {
-      // Default slot games array (some popular ones)
-      return [
-        "Sweet Bonanza", "Gates of Olympus", "Starlight Princess", "Sugar Rush", "Big Bass Splash",
-        "Wild West Gold", "The Dog House", "Power of Thor Megaways", "Joker’s Jewels", "Floating Dragon"
-      ];
-    }
-    try {
-      return JSON.parse(slotsJson);
-    } catch {
-      return [];
-    }
+  // Load slots from localStorage or create initial slots
+  function loadSlots() {
+    const raw = localStorage.getItem(SLOTS_KEY);
+    if (raw) return JSON.parse(raw);
+
+    // Initial slots list - example, you can customize this list
+    const initialSlots = [
+      "Sweet Bonanza",
+      "Sweet Bonanza Xmas",
+      "Gates of Olympus",
+      "The Dog House",
+      "The Dog House Megaways",
+      "Jungle Delight",
+      "Madame Destiny Megaways",
+      "Release the Kraken",
+      "Wild West Gold",
+      "Fruit Party",
+      "Panda's Fortune",
+      "Magic Crystals",
+      "John Hunter and the Tomb of the Scarab Queen",
+      "Safari Gold Megaways",
+      "Wolf Gold",
+      "Hot to Burn",
+      "Pirate Gold",
+      "John Hunter and the Book of Tut",
+      "Caishen Wins",
+      "John Hunter and the Mayan Gods"
+    ];
+    localStorage.setItem(SLOTS_KEY, JSON.stringify(initialSlots));
+    return initialSlots;
   }
 
-  // Save slot games to localStorage
-  function saveSlotGames(slots) {
+  // Save slots list
+  function saveSlots(slots) {
     localStorage.setItem(SLOTS_KEY, JSON.stringify(slots));
   }
 
-  // Save current user to localStorage
-  function saveCurrentUser(user) {
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
-  }
-
-  // Load current user from localStorage
-  function loadCurrentUser() {
-    const userJson = localStorage.getItem(CURRENT_USER_KEY);
-    if (!userJson) return null;
-    try {
-      return JSON.parse(userJson);
-    } catch {
-      return null;
-    }
-  }
-
-  // Show message for a few seconds
+  // Show message text, isError defaults to true for red color
   function showMessage(text, isError = true) {
-    message.style.color = isError ? '#ff5555' : '#00ffc3';
     message.textContent = text;
+    message.style.color = isError ? '#ff5555' : '#00ff99';
     setTimeout(() => {
       message.textContent = '';
-    }, 5000);
+    }, 4000);
   }
 
-  // Switch UI between login, register, reset, and main app
-  function showLogin() {
-    loginContainer.classList.remove('hidden');
-    app.classList.add('hidden');
-    registerForm.classList.add('hidden');
-    resetForm.classList.add('hidden');
-    loginForm.classList.remove('hidden');
-    message.textContent = '';
-  }
-
-  function showRegister() {
-    registerForm.classList.remove('hidden');
-    loginForm.classList.add('hidden');
-    resetForm.classList.add('hidden');
-    message.textContent = '';
-  }
-
-  function showReset() {
-    resetForm.classList.remove('hidden');
-    loginForm.classList.add('hidden');
-    registerForm.classList.add('hidden');
-    message.textContent = '';
-  }
-
-  function showApp() {
-    loginContainer.classList.add('hidden');
-    app.classList.remove('hidden');
-    message.textContent = '';
-  }
-
-  // Validate registration form inputs
-  function validateRegistration(username, email, password, confirm) {
-    if (!username.trim() || !email.trim() || !password || !confirm) {
-      showMessage("Please fill in all fields.");
-      return false;
-    }
-    if (password !== confirm) {
-      showMessage("Passwords do not match.");
-      return false;
-    }
-    if (!email.includes("@")) {
-      showMessage("Invalid email.");
-      return false;
-    }
-    return true;
-  }
-
-  // Register new user
+  // Register user function with single admin enforcement
   function registerUser(username, email, password) {
     const users = loadUsers();
+
     if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
       showMessage("Username already exists.");
       return false;
     }
+
     if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
       showMessage("Email already registered.");
       return false;
     }
+
+    // SINGLE ADMIN ENFORCEMENT:
+    if (username.toLowerCase() === "admin") {
+      if (users.some(u => u.role === "admin")) {
+        showMessage("Admin user already exists. Cannot create another.");
+        return false;
+      }
+    }
+
     const newUser = {
       username,
       email,
       password,
       role: username.toLowerCase() === "admin" ? "admin" : "user"
     };
+
     users.push(newUser);
     saveUsers(users);
     showMessage("Registration successful! Please login.", false);
@@ -413,145 +370,263 @@
   function loginUser(username, password) {
     const users = loadUsers();
     const user = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
-    if (!user) {
-      showMessage("Invalid username or password.");
-      return null;
+    if (user) {
+      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+      return user;
     }
-    return user;
+    return null;
   }
 
-  // Reset password (set to 'newpass123')
-  function resetPassword(username, email) {
-    const users = loadUsers();
-    const userIndex = users.findIndex(u => u.username.toLowerCase() === username.toLowerCase() && u.email.toLowerCase() === email.toLowerCase());
-    if (userIndex === -1) {
-      showMessage("User not found or email does not match.");
-      return false;
-    }
-    users[userIndex].password = "newpass123";
-    saveUsers(users);
-    showMessage("Password reset. Use 'newpass123' to login and change it.", false);
-    return true;
+  // Logout user
+  function logoutUser() {
+    localStorage.removeItem(CURRENT_USER_KEY);
+    location.reload();
   }
 
-  // Render slot cards on page
-  function renderSlots(games) {
+  // Get current logged-in user
+  function getCurrentUser() {
+    const raw = localStorage.getItem(CURRENT_USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }
+
+  // Show login form
+  function showLogin() {
+    loginContainer.style.display = "block";
+    app.style.display = "none";
+    registerForm.classList.add("hidden");
+    resetForm.classList.add("hidden");
+    loginForm.classList.remove("hidden");
+    message.textContent = "";
+  }
+
+  // Show register form
+  function showRegister() {
+    loginForm.classList.add("hidden");
+    registerForm.classList.remove("hidden");
+    resetForm.classList.add("hidden");
+    message.textContent = "";
+  }
+
+  // Show reset form
+  function showReset() {
+    loginForm.classList.add("hidden");
+    registerForm.classList.add("hidden");
+    resetForm.classList.remove("hidden");
+    message.textContent = "";
+  }
+
+  // Show main app
+  function showApp(user) {
+    loginContainer.style.display = "none";
+    app.style.display = "block";
+    message.textContent = "";
+    if (user.role === "admin") {
+      adminPanel.classList.remove("hidden");
+      loadAdminSlots();
+    } else {
+      adminPanel.classList.add("hidden");
+    }
+    loadAndRenderSlots();
+  }
+
+  // Load and render slots with fake stats
+  function loadAndRenderSlots() {
+    let slots = loadSlots();
+
+    const now = new Date();
+    lastUpdated.textContent = `Last updated: ${now.toLocaleString()}`;
+
     slotsContainer.innerHTML = "";
-    games.forEach(slot => {
+
+    slots.forEach(slotName => {
+      // Generate fake stats for display
+      const hitRate = parseFloat(randomFloat(20, 90));
+      const winRate = parseFloat(randomFloat(20, 90));
+      const prediction = parseFloat(randomFloat(20, 90));
+      const averageWin = parseFloat(randomFloat(30, 70));
       const history = generateFakeHistory();
-      const avg = (history.reduce((a, b) => a + b) / history.length).toFixed(2);
-      const prediction = parseFloat(randomFloat(0, 100));
-      const recommendedBet = recommendBet(prediction);
-      const recommendedAmount = recommendBetAmount(prediction);
-      const recommendedSpin = recommendSpinType(avg, prediction);
 
-      const slotCard = document.createElement('div');
-      slotCard.className = 'slot-card';
+      const betRecommendation = recommendBet(prediction);
+      const betAmountRecommendation = recommendBetAmount(hitRate);
+      const spinTypeRecommendation = recommendSpinType(averageWin, prediction);
 
-      slotCard.innerHTML = `
-        <h3>${slot}</h3>
-        <div class="stat">Average Win Rate: <span class="yellow">${avg}%</span></div>
-        <div class="stat">Prediction: <span class="green">${prediction}%</span></div>
-        <div class="stat">Recommended Bet: <span class="green">${recommendedBet}</span></div>
-        <div class="stat">Recommended Bet Amount: <span class="green">${recommendedAmount}</span></div>
-        <div class="stat">Recommended Spin: <span class="green">${recommendedSpin}</span></div>
+      // Create slot card div
+      const card = document.createElement('div');
+      card.className = "slot-card";
+
+      card.innerHTML = `
+        <h3>${slotName}</h3>
+        <div class="stat">Hit Rate: <span class="${hitRate > 50 ? 'green' : 'red'}">${hitRate}%</span></div>
+        <div class="stat">Win Rate: <span class="${winRate > 50 ? 'green' : 'red'}">${winRate}%</span></div>
+        <div class="stat">Prediction: <span class="${prediction > 50 ? 'green' : 'red'}">${prediction}%</span></div>
+        <div class="stat">Average Win: <span class="${averageWin > 50 ? 'green' : 'red'}">${averageWin}%</span></div>
+        <div class="stat">Bet Recommendation: <strong>${betRecommendation}</strong></div>
+        <div class="stat">Bet Amount: <strong>${betAmountRecommendation}</strong></div>
+        <div class="stat">Spin Type: <strong>${spinTypeRecommendation}</strong></div>
         <canvas class="graph-canvas"></canvas>
       `;
 
-      slotsContainer.appendChild(slotCard);
+      slotsContainer.appendChild(card);
 
-      // Chart.js for graph
-      const ctx = slotCard.querySelector('canvas').getContext('2d');
+      // Render chart
+      const ctx = card.querySelector('canvas').getContext('2d');
       createChart(ctx, history);
     });
   }
 
-  // Filter slots by search query
-  function filterSlots(query) {
-    query = query.trim().toLowerCase();
-    const filtered = slotGames.filter(s => s.toLowerCase().includes(query));
-    renderSlots(filtered);
+  // Admin: Load slots into textarea
+  function loadAdminSlots() {
+    const slots = loadSlots();
+    adminTextarea.value = slots.join('\n');
   }
 
-  // Setup event handlers
+  // Admin: Save slots from textarea
+  function saveAdminSlots() {
+    const lines = adminTextarea.value.split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+
+    if (lines.length === 0) {
+      alert("Slot list cannot be empty.");
+      return;
+    }
+
+    saveSlots(lines);
+    showMessage("Slots list updated.", false);
+    loadAndRenderSlots();
+  }
+
+  // Reset password (just update password if username and email match)
+  function resetPassword(username, email) {
+    const users = loadUsers();
+    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.email.toLowerCase() === email.toLowerCase());
+    if (!user) {
+      showMessage("Username and email do not match.");
+      return false;
+    }
+    const newPass = prompt("Enter your new password:");
+    if (!newPass || newPass.length < 4) {
+      showMessage("Password must be at least 4 characters.");
+      return false;
+    }
+    user.password = newPass;
+    saveUsers(users);
+    showMessage("Password reset successful. Please login.", false);
+    showLogin();
+    return true;
+  }
+
+  // Event listeners
+
+  // Login form submit
   loginForm.addEventListener('submit', e => {
     e.preventDefault();
-    const user = loginUser(loginUsername.value.trim(), loginPassword.value);
+    const username = loginUsername.value.trim();
+    const password = loginPassword.value;
+
+    if (!username || !password) {
+      showMessage("Please enter username and password.");
+      return;
+    }
+
+    const user = loginUser(username, password);
     if (user) {
-      currentUser = user;
-      saveCurrentUser(user);
-      startApp();
+      showApp(user);
+    } else {
+      showMessage("Invalid username or password.");
     }
   });
 
+  // Register form submit
   registerForm.addEventListener('submit', e => {
     e.preventDefault();
-    if (validateRegistration(regUsername.value, regEmail.value, regPassword.value, regPasswordConfirm.value)) {
-      if (registerUser(regUsername.value.trim(), regEmail.value.trim(), regPassword.value)) {
-        showLogin();
-      }
-    }
-  });
+    const username = regUsername.value.trim();
+    const email = regEmail.value.trim();
+    const password = regPassword.value;
+    const confirm = regPasswordConfirm.value;
 
-  resetForm.addEventListener('submit', e => {
-    e.preventDefault();
-    if (resetPassword(resetUsername.value.trim(), resetEmail.value.trim())) {
+    if (!username || !email || !password || !confirm) {
+      showMessage("Please fill all fields.");
+      return;
+    }
+    if (password !== confirm) {
+      showMessage("Passwords do not match.");
+      return;
+    }
+    if (password.length < 4) {
+      showMessage("Password must be at least 4 characters.");
+      return;
+    }
+
+    if (registerUser(username, email, password)) {
+      registerForm.reset();
       showLogin();
     }
   });
 
-  showRegisterBtn.addEventListener('click', () => showRegister());
-  backToLoginFromReg.addEventListener('click', () => showLogin());
-  showResetBtn.addEventListener('click', () => showReset());
-  backToLoginFromReset.addEventListener('click', () => showLogin());
+  // Reset form submit
+  resetForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const username = resetUsername.value.trim();
+    const email = resetEmail.value.trim();
 
-  logoutBtn.addEventListener('click', () => {
-    currentUser = null;
-    localStorage.removeItem(CURRENT_USER_KEY);
+    if (!username || !email) {
+      showMessage("Please enter username and registered email.");
+      return;
+    }
+
+    resetPassword(username, email);
+  });
+
+  // Show register form
+  showRegisterBtn.addEventListener('click', () => {
+    showRegister();
+  });
+
+  // Show reset form
+  showResetBtn.addEventListener('click', () => {
+    showReset();
+  });
+
+  backToLoginFromReg.addEventListener('click', () => {
     showLogin();
   });
 
-  searchBar.addEventListener('input', e => {
-    filterSlots(e.target.value);
+  backToLoginFromReset.addEventListener('click', () => {
+    showLogin();
   });
 
+  // Logout button
+  logoutBtn.addEventListener('click', () => {
+    logoutUser();
+  });
+
+  // Admin save slots
   saveSlotsBtn.addEventListener('click', () => {
-    // Parse textarea lines
-    const lines = adminTextarea.value.split('\n')
-      .map(l => l.trim())
-      .filter(l => l.length > 0);
-    slotGames = lines;
-    saveSlotGames(slotGames);
-    renderSlots(slotGames);
-    alert("Slot games list saved!");
+    saveAdminSlots();
   });
 
-  // Start main app view after login
-  function startApp() {
-    slotGames = loadSlotGames();
-    showApp();
+  // Search bar filtering
+  searchBar.addEventListener('input', () => {
+    const query = searchBar.value.trim().toLowerCase();
+    const cards = slotsContainer.querySelectorAll('.slot-card');
 
-    document.getElementById('lastUpdated').textContent = 'Last updated: ' + new Date().toLocaleString();
+    cards.forEach(card => {
+      const name = card.querySelector('h3').textContent.toLowerCase();
+      card.style.display = name.includes(query) ? 'block' : 'none';
+    });
+  });
 
-    if (currentUser.role === "admin") {
-      adminPanel.classList.remove('hidden');
-      adminTextarea.value = slotGames.join('\n');
-    } else {
-      adminPanel.classList.add('hidden');
-    }
-
-    renderSlots(slotGames);
-  }
-
-  // On page load, check if already logged in
-  window.addEventListener('load', () => {
-    currentUser = loadCurrentUser();
-    if (currentUser) {
-      startApp();
+  // On page load, check if user is logged in
+  window.onload = () => {
+    const user = getCurrentUser();
+    if (user) {
+      showApp(user);
     } else {
       showLogin();
     }
-  });
+  };
 </script>
+
 </body>
 </html>
