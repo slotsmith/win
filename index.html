@@ -6,92 +6,101 @@
 <title>Slot Smith Pro - Login</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-  /* Basic reset and font */
-  body {
+  /* Reset & basic styles */
+  html, body {
+    height: 100%;
+    margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: #1f1f2e;
     color: #fff;
-    margin: 0;
-    padding: 20px;
-    height: 100vh;
+  }
+
+  /* Body uses flexbox to center #app horizontally and vertically */
+  body {
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: 20px;
   }
 
-  /* Fade-in animation for login container */
+  /* Fade-in animation for login container only */
   @keyframes fadeIn {
     from {opacity: 0; transform: translateY(-10px);}
     to {opacity: 1; transform: translateY(0);}
   }
 
+  /* Login container */
   #loginContainer {
-    max-width: 400px;
     width: 100%;
+    max-width: 400px;
     animation: fadeIn 0.6s ease forwards;
   }
 
-  /* Center the app container and content for main page */
+  /* Main app container - centered with flex column */
   #app {
-    max-width: 900px;
     width: 100%;
+    max-width: 900px;
     display: flex;
     flex-direction: column;
-    align-items: center; /* horizontal center */
-    justify-content: flex-start; /* start top */
-    margin: auto;
+    align-items: center;
+    justify-content: flex-start; /* top aligned but horizontally centered */
     min-height: 90vh;
   }
 
-  /* Headings centered and color */
+  /* Headings centered */
   h1, h2 {
     text-align: center;
     color: #00ffc3;
+    margin-top: 0;
   }
 
   /* Hide elements */
   .hidden {
-    display: none;
+    display: none !important;
   }
 
-  /* Inputs and buttons style */
+  /* Inputs & buttons styling */
   input, button {
     display: block;
     width: 100%;
-    margin: 10px auto;
+    margin: 10px 0;
     padding: 10px;
     border-radius: 10px;
     border: none;
     font-size: 1rem;
     background: #2c2c3c;
     color: #fff;
-    outline: none; /* no focus outline */
-    box-shadow: none; /* no focus shadow */
-    transition: background-color 0.3s ease;
+    outline: none;
+    box-shadow: none;
+    transition: none; /* no highlight transitions */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
   }
 
+  /* Placeholder color */
   input::placeholder {
     color: #66fff0cc;
   }
 
+  /* Buttons styling */
   button {
     background: #00ffc3;
     color: #000;
-    cursor: pointer;
     font-weight: bold;
+    cursor: pointer;
   }
-
   button:hover {
     background: #00cc9a;
   }
 
-  /* Remove highlight or outline on focus */
+  /* Remove outlines and highlights on focus */
   input:focus, button:focus {
     outline: none;
     box-shadow: none;
   }
 
-  /* Link buttons style */
+  /* Link styled buttons */
   .link-btn {
     background: none;
     border: none;
@@ -103,7 +112,7 @@
     margin: 0 0 10px 0;
   }
 
-  /* Slots container grid and cards styling */
+  /* Slots container grid */
   #slotsContainer {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
@@ -112,6 +121,7 @@
     width: 100%;
   }
 
+  /* Slot cards */
   .slot-card {
     background: #2c2c3c;
     border-radius: 20px;
@@ -137,16 +147,15 @@
     height: auto !important;
   }
 
+  /* Colors for stats */
   .green {
     color: #00ffb3;
     font-weight: 600;
   }
-
   .yellow {
     color: #ffd966;
     font-weight: 600;
   }
-
   .red {
     color: #ff6666;
     font-weight: 600;
@@ -163,9 +172,20 @@
     border-radius: 15px;
     padding: 10px;
     box-sizing: border-box;
+    border: none;
+    outline: none;
   }
 
-  /* Buttons for logout and toggle mode */
+  /* Admin panel buttons */
+  #saveSlotsBtn {
+    margin-top: 10px;
+    width: 100%;
+    background: #00cc9a;
+    color: #000;
+    font-weight: bold;
+  }
+
+  /* Logout and toggle buttons */
   #logoutBtn {
     margin-top: 20px;
     background: #ff4c4c;
@@ -173,23 +193,18 @@
     width: 200px;
   }
 
-  #toggleModeBtn {
-    margin-top: 10px;
-    background: #0077cc;
-    color: #fff;
-  }
-
   /* Message styling */
   #message {
     text-align: center;
     margin: 10px 0;
     color: #ff5555;
-    min-height: 1.2em; /* preserve space */
+    min-height: 1.2em;
   }
 </style>
 </head>
 <body>
 
+<!-- LOGIN CONTAINER with fade-in -->
 <div id="loginContainer">
   <h1>🎰 Slot Smith Pro - Login</h1>
   <div id="message"></div>
@@ -222,6 +237,7 @@
   </form>
 </div>
 
+<!-- MAIN APP CONTAINER -->
 <div id="app" class="hidden">
   <h1>🎰 Slot Smith Pro</h1>
   <p id="lastUpdated">Last updated: --</p>
@@ -238,7 +254,7 @@
 </div>
 
 <script>
-  // Utility functions
+  // Utility helpers
   function randomFloat(min, max) {
     return (Math.random() * (max - min) + min).toFixed(2);
   }
@@ -301,7 +317,7 @@
     });
   }
 
-  // Initial slot games list
+  // Slot games initial list
   let slotGames = [
     "7 Coins",
     "7 Koi Gate",
@@ -315,10 +331,7 @@
     "Dog House",
   ];
 
-  // Cached data for slots
   let slotsData = [];
-
-  // User mode state
   let isAdmin = false;
   let isUserMode = false;
 
@@ -346,7 +359,7 @@
   const adminTextarea = document.getElementById('adminTextarea');
   const saveSlotsBtn = document.getElementById('saveSlotsBtn');
 
-  // Show/Hide forms
+  // Show/hide forms handlers
   showRegisterBtn.onclick = () => {
     loginForm.classList.add('hidden');
     registerForm.classList.remove('hidden');
@@ -375,15 +388,14 @@
     messageDiv.textContent = '';
   };
 
-  // Fake authentication for demo
+  // Fake authentication function
   function fakeAuth(username, password) {
-    // For demo: admin user = admin/admin, others fail
     if (username === 'admin' && password === 'admin') return { success: true, role: 'admin' };
     if (username && password) return { success: true, role: 'user' };
     return { success: false, error: 'Invalid credentials' };
   }
 
-  // Login form submit
+  // Login submit handler
   loginForm.addEventListener('submit', e => {
     e.preventDefault();
     const username = document.getElementById('loginUsername').value.trim();
@@ -399,12 +411,13 @@
       loadSlotGames();
       renderSlots();
       lastUpdated.textContent = `Last updated: ${new Date().toLocaleString()}`;
+      if (isAdmin) updateAdminTextarea();
     } else {
       messageDiv.textContent = result.error;
     }
   });
 
-  // Register form submit (fake)
+  // Register submit (fake)
   registerForm.addEventListener('submit', e => {
     e.preventDefault();
     const username = document.getElementById('regUsername').value.trim();
@@ -419,13 +432,14 @@
       messageDiv.textContent = 'Passwords do not match.';
       return;
     }
+    messageDiv.style.color = '#00ffb3';
     messageDiv.textContent = `User ${username} registered (demo only). Please login.`;
     registerForm.reset();
     registerForm.classList.add('hidden');
     loginForm.classList.remove('hidden');
   });
 
-  // Reset form submit (fake)
+  // Reset password submit (fake)
   resetForm.addEventListener('submit', e => {
     e.preventDefault();
     const username = document.getElementById('resetUsername').value.trim();
@@ -434,17 +448,19 @@
       messageDiv.textContent = 'Please fill all fields.';
       return;
     }
+    messageDiv.style.color = '#00ffb3';
     messageDiv.textContent = `Password reset link sent to ${email} (demo only).`;
     resetForm.reset();
     resetForm.classList.add('hidden');
     loginForm.classList.remove('hidden');
   });
 
-  // Logout button
+  // Logout
   logoutBtn.addEventListener('click', () => {
     isAdmin = false;
     isUserMode = false;
     messageDiv.textContent = '';
+    messageDiv.style.color = '#ff5555';
     loginForm.reset();
     registerForm.reset();
     resetForm.reset();
@@ -453,7 +469,7 @@
     appContainer.classList.add('hidden');
   });
 
-  // Load slot games into slotsData with fake stats and history
+  // Load slot games data with fake stats
   function loadSlotGames() {
     slotsData = slotGames.map(name => {
       let prediction = parseFloat(randomFloat(30, 95));
@@ -470,7 +486,7 @@
     });
   }
 
-  // Render slots cards filtered by search
+  // Render slot cards with filtering
   function renderSlots() {
     const searchTerm = searchBar.value.trim().toLowerCase();
     slotsContainer.innerHTML = '';
@@ -486,7 +502,6 @@
       const card = document.createElement('div');
       card.classList.add('slot-card');
 
-      // Choose color based on prediction
       let predictionClass = slot.prediction > 80 ? 'green' :
                             slot.prediction > 60 ? 'yellow' : 'red';
 
@@ -511,12 +526,17 @@
     });
   }
 
-  // Search bar input event
+  // Search input listener
   searchBar.addEventListener('input', () => {
     renderSlots();
   });
 
-  // Admin panel save button
+  // Admin textarea update
+  function updateAdminTextarea() {
+    adminTextarea.value = slotGames.join('\n');
+  }
+
+  // Save admin slot games changes
   saveSlotsBtn.addEventListener('click', () => {
     const lines = adminTextarea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length === 0) {
@@ -528,15 +548,6 @@
     renderSlots();
     alert('Slot games updated.');
   });
-
-  // Initialize admin textarea when admin panel shown
-  function updateAdminTextarea() {
-    adminTextarea.value = slotGames.join('\n');
-  }
-
-  // When admin panel visibility toggled, update textarea
-  // Called only on login currently
-  if (isAdmin) updateAdminTextarea();
 
 </script>
 </body>
