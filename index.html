@@ -16,8 +16,14 @@
     h1 {
       text-align: center;
       font-size: 2.5rem;
-      margin-bottom: 20px;
+      margin-bottom: 5px;
       color: #00ffc3;
+    }
+    #lastUpdated {
+      text-align: center;
+      color: #ccc;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
     }
     #searchBar {
       display: block;
@@ -83,6 +89,7 @@
 </head>
 <body>
   <h1>🎰 Slot Smith Pro</h1>
+  <p id="lastUpdated">Last updated: --</p>
   <input type="text" id="searchBar" placeholder="Search for a slot game..." />
   <div class="slots-container" id="slotsContainer"></div>
 
@@ -180,12 +187,12 @@
     const container = document.getElementById("slotsContainer");
 
     function renderSlots(games) {
-      container.innerHTML = ""; // clear before rendering
+      container.innerHTML = "";
 
       games.forEach(slot => {
         const history = generateFakeHistory();
         const avg = (history.reduce((a, b) => a + b) / history.length).toFixed(2);
-        const prediction = randomFloat(0, 100);
+        const prediction = parseFloat(randomFloat(0, 100));
         const betAdvice = recommendBet(prediction);
         const colorClass = prediction > 70 ? "green" : prediction > 40 ? "yellow" : "red";
 
@@ -200,7 +207,6 @@
           <div class="stat">🎰 Spin Type: <b>${recommendSpinType(avg, prediction)}</b></div>
           <canvas class="graph-canvas" id="chart-${slot.replace(/\s+/g, '')}" height="90"></canvas>
         `;
-
         container.appendChild(slotCard);
 
         const canvas = document.getElementById(`chart-${slot.replace(/\s+/g, '')}`);
@@ -208,10 +214,16 @@
       });
     }
 
-    // Initial render with all games
-    renderSlots(slotGames);
+    function updateSlots() {
+      const currentGames = Array.from(document.querySelectorAll('.slot-card h2')).map(h => h.textContent);
+      renderSlots(currentGames);
+      const now = new Date().toLocaleTimeString();
+      document.getElementById("lastUpdated").textContent = `Last updated: ${now}`;
+    }
 
-    // Search functionality
+    renderSlots(slotGames);
+    setInterval(updateSlots, 30000);
+
     const searchBar = document.getElementById("searchBar");
     searchBar.addEventListener("input", (e) => {
       const searchTerm = e.target.value.toLowerCase();
