@@ -2,395 +2,341 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Multi‑Provider Slot Win Rate Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Slot Smith Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      font-family: sans-serif;
-      background: #111;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1f1f2e;
       color: #fff;
-      text-align: center;
+      margin: 0;
       padding: 20px;
-      max-width: 900px;
-      margin: auto;
     }
-    h1 { color: #ffcc00; margin-bottom: 10px; }
-    input {
-      padding: 10px;
-      width: 90%;
-      max-width: 400px;
-      margin-bottom: 10px;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
+    h1 {
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      color: #00ffc3;
     }
-    button {
-      padding: 8px 16px;
-      font-size: 14px;
+    #searchContainer {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    #searchInput {
+      padding: 10px 15px;
+      width: 300px;
+      border-radius: 10px 0 0 10px;
       border: none;
-      border-radius: 6px;
-      background: #ffcc00;
-      color: #111;
+      font-size: 1rem;
+      outline: none;
+    }
+    #searchButton {
+      padding: 10px 20px;
+      border-radius: 0 10px 10px 0;
+      border: none;
+      background-color: #00ffc3;
+      color: #1f1f2e;
+      font-weight: bold;
       cursor: pointer;
-      margin-bottom: 15px;
+      font-size: 1rem;
+      transition: background-color 0.3s ease;
     }
-    button:hover { background: #e6b800; }
-    .info { font-size: 12px; color: #aaa; margin-bottom: 20px; }
+    #searchButton:hover {
+      background-color: #00d4a3;
+    }
+    .slots-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(550px, 1fr));
+      gap: 30px;
+    }
     .slot-card {
-      background: #222;
-      margin: 15px auto;
-      padding: 15px;
-      width: 90%;
-      max-width: 500px;
-      border: 1px solid #444;
-      border-radius: 10px;
-      text-align: left;
+      background: #2c2c3c;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
     }
-    .progress-bar {
-      height: 14px;
-      background: #444;
-      border-radius: 7px;
-      overflow: hidden;
-      margin-top: 5px;
-      width: 100%;
+    .slot-card h2 {
+      margin: 0 0 20px;
+      color: #00d4ff;
     }
-    .fill {
-      height: 100%;
-      background: #00cc66;
-      transition: width 1s ease;
+    .stat {
+      margin: 8px 0;
+      font-size: 1.1rem;
     }
-    .winrate {
-      font-weight: bold;
-      margin-bottom: 6px;
-    }
-    .prediction {
-      font-weight: bold;
-      margin-bottom: 6px;
-      color: #0af;
-    }
-    .spin-type {
-      font-style: italic;
-      color: #ffd966;
-      margin-top: 6px;
-    }
-    .advice { margin-top: 10px; font-weight: bold; }
-    .good { color: #0f0; }
-    .wait { color: #f55; }
-    canvas {
-      margin-top: 15px;
-      background: #111;
-      border-radius: 6px;
+    .graph-canvas {
+      margin-top: 20px;
       width: 100% !important;
-      height: 120px !important;
     }
-    .updated-time { font-size: 14px; color: #ccc; margin-bottom: 10px; }
+    .green { color: #00ffb1; }
+    .yellow { color: #ffd93b; }
+    .red { color: #ff4c4c; }
   </style>
 </head>
 <body>
-  <h1>🎰 Multi‑Provider Slot Win Rate Tracker</h1>
-  <input type="text" id="searchInput" placeholder="Search slots..." />
-  <br/>
-  <button id="toggleUpdatesBtn">Pause Updates ⏸️</button>
-  <div class="updated-time" id="lastUpdated">Last updated: --:--:--</div>
-  <div class="info">ℹ️ Win rates update every 30 seconds. Data is simulated.</div>
-  <div id="slotsContainer"></div>
+  <h1>🎰 Slot Smith Tracker</h1>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <div id="searchContainer">
+    <input type="text" id="searchInput" placeholder="Search slot games..." />
+    <button id="searchButton">Search</button>
+  </div>
+
+  <div class="slots-container" id="slotsContainer"></div>
+
   <script>
-    const providers = {
-      "Pragmatic Play": [
-        "Irish Crown",
-        "Gates of Olympus Super Scatter",
-        "Mahjong Wins Super Scatter",
-        "Wild West Gold Blazing Bounty",
-        "Gates of Hades",
-        "The Dog House – Royal Hunt",
-        "Book of Monsters",
-        "Big Bass Bonanza 1000",
-        "Starlight Princess 1000",
-        "Gates of Olympus 1000",
-        "Sugar Rush 1000",
-        "Sweet Bonanza 1000",
-        "Wisdom of Athena 1000",
-        "Gates of Olympus Xmas 1000",
-        "Hades Inferno 1000",
-        "Big Bass Bonanza 1000",
-        "Lucky Tiger 1000",
-        "Sweet Bonanza",
-        "Sugar Rush",
-        "Gates of Olympus",
-        "Starlight Princess",
-        "Big Bass Splash",
-        "Fruit Party",
-        "Wild West Gold",
-        "The Dog House",
-        "Power of Thor Megaways",
-        "Joker’s Jewels",
-        "Floating Dragon",
-        "Madame Destiny Megaways",
-        "John Hunter and the Tomb of the Scarab Queen",
-        "Chilli Heat",
-        "Buffalo King Megaways",
-        "Mustang Gold",
-        "5 Lions",
-        "Aztec Gems",
-        "Pyramid Bonanza",
-        "Lucky Lightning"
-      ]
-    };
+    // Array of objects with popularity score (example values)
+    const slotGamesWithPopularity = [
+      { name: "Gates of Olympus", popularity: 98 },
+      { name: "Sweet Bonanza", popularity: 95 },
+      { name: "Starlight Princess", popularity: 90 },
+      { name: "Sugar Rush", popularity: 88 },
+      { name: "Big Bass Splash", popularity: 85 },
+      { name: "Wild West Gold", popularity: 83 },
+      { name: "The Dog House", popularity: 80 },
+      { name: "Power of Thor Megaways", popularity: 78 },
+      { name: "Joker’s Jewels", popularity: 75 },
+      { name: "Floating Dragon", popularity: 73 },
+      { name: "Madame Destiny Megaways", popularity: 70 },
+      { name: "John Hunter series", popularity: 68 },
+      { name: "Chilli Heat", popularity: 65 },
+      { name: "Buffalo King Megaways", popularity: 63 },
+      { name: "Mustang Gold", popularity: 60 },
+      { name: "5 Lions series", popularity: 58 },
+      { name: "Aztec Gems", popularity: 55 },
+      { name: "Pyramid Bonanza", popularity: 53 },
+      { name: "Lucky Lightning", popularity: 50 },
+      { name: "Gates of Olympus Super Scatter", popularity: 48 },
+      { name: "Mahjong Wins Super Scatter", popularity: 46 },
+      { name: "Wild West Gold Blazing Bounty", popularity: 44 },
+      { name: "Gates of Hades", popularity: 42 },
+      { name: "The Dog House – Royal Hunt", popularity: 40 },
+      { name: "Book of Monsters", popularity: 38 },
+      { name: "Big Bass Bonanza 1000", popularity: 36 },
+      { name: "Starlight Princess 1000", popularity: 35 },
+      { name: "Gates of Olympus 1000", popularity: 34 },
+      { name: "Sugar Rush 1000", popularity: 33 },
+      { name: "Sweet Bonanza 1000", popularity: 32 },
+      { name: "Wisdom of Athena 1000", popularity: 31 },
+      { name: "Gates of Olympus Xmas 1000", popularity: 30 },
+      { name: "Hades Inferno 1000", popularity: 29 },
+      { name: "Lucky Tiger 1000", popularity: 28 },
+      { name: "Irish Crown", popularity: 27 },
+      { name: "Zeus vs Hades Gods of War", popularity: 26 },
+      { name: "Gates of Gatotkacha 1000", popularity: 25 },
+      { name: "Gates of Gatotkacha", popularity: 24 },
+      { name: "Candy Blitz Bombs", popularity: 23 },
+      { name: "Fire Portals", popularity: 22 },
+      { name: "Sugar Rush X-Max", popularity: 21 },
+      { name: "Candy Blitz", popularity: 20 },
+      { name: "Rujak Bonanza", popularity: 19 },
+      { name: "Wildies", popularity: 18 },
+      { name: "Sweet Bonanza X-Max", popularity: 17 },
+      { name: "Happy Fortune", popularity: 16 },
+      { name: "Sticky Bees", popularity: 15 },
+      { name: "Cyan Mania", popularity: 14 },
+      { name: "Forge of Olympus", popularity: 13 },
+      { name: "Wild Bison Church", popularity: 12 },
+      { name: "The Dog House Dog or Alive", popularity: 11 },
+      { name: "Mustang Gold Mega Waste", popularity: 10 },
+      { name: "Will of Gold", popularity: 9 },
+      { name: "Gates of Olympus Dice", popularity: 8 },
+      { name: "Aztec Treasure Hunt", popularity: 7 },
+      { name: "Angel vs Sinner", popularity: 6 },
+      { name: "Power of Ninja", popularity: 5 },
+      { name: "Six Joker", popularity: 4 },
+      { name: "Twilight Princess", popularity: 3 },
+      { name: "Cyber Heist", popularity: 2 },
+      { name: "Five Lions Mega Waste", popularity: 1 },
+      // ... you can assign more or adjust these values as you want
+      { name: "Big Bus Bay at the Graces", popularity: 50 },
+      { name: "Heart of Cleopatra", popularity: 49 },
+      { name: "The Dog House Mega Waste", popularity: 48 },
+      { name: "Release the Bison", popularity: 47 },
+      { name: "Power of Thor Mega Waste", popularity: 46 },
+      { name: "Buffalo King Mega Waste", popularity: 45 },
+      { name: "Chest of Kaishen", popularity: 44 },
+      { name: "Five Lions 2 Mega Waste", popularity: 43 },
+      { name: "Greedy Fortune Pig", popularity: 42 },
+      { name: "Majestic Express Gold Run", popularity: 41 },
+      { name: "Pig Farm", popularity: 40 },
+      { name: "Jumbo Safari", popularity: 39 },
+      { name: "Fiesta Fortune", popularity: 38 },
+      { name: "Sleeping Dragon", popularity: 37 },
+      { name: "Resurrecting Riches", popularity: 36 },
+      { name: "Witch Heart", popularity: 35 },
+      { name: "Super Scatter", popularity: 34 },
+      { name: "Cash Surge", popularity: 33 },
+      { name: "Five Lions Reborn", popularity: 32 },
+      { name: "Ride the Lightning", popularity: 31 },
+      { name: "Bandit Mega Waste", popularity: 30 },
+      { name: "Joker's Jewels Cash", popularity: 29 },
+      { name: "Blitz Super Wheel", popularity: 28 },
+      { name: "Triple Pot Gold", popularity: 27 },
+      { name: "Wild Wild Joker", popularity: 26 },
+      { name: "Lucky Wild Pop", popularity: 25 },
+      { name: "Raging Waterfall", popularity: 24 },
+      { name: "Pepe's Pepperoni Pizza Plaza", popularity: 23 },
+      { name: "Big Bus Return to the Graces", popularity: 22 },
+      { name: "Savannah Legend", popularity: 21 },
+      { name: "Bigger Bus Splash", popularity: 20 },
+      { name: "John Hunter and Galileo's Secret", popularity: 19 },
+      { name: "Ancient Island Mega Waste", popularity: 18 },
+      { name: "Escape the Pyramid Fire and Ice", popularity: 17 },
+      { name: "Wild Beast Wings", popularity: 16 },
+      { name: "Aztec Gems Mega Waste", popularity: 15 },
+      { name: "Brick House Bonanza", popularity: 14 },
+      { name: "Fonzo's Feline Fortune", popularity: 13 },
+      { name: "Aztec Smash", popularity: 12 },
+      { name: "Big Bus Bonanza 3-Railer", popularity: 11 },
+      { name: "Mining Rush", popularity: 10 },
+      { name: "Tiny Toads", popularity: 9 },
+      { name: "Santa's X-Mas Rush", popularity: 8 },
+      { name: "Penguin's Christmas Party Time", popularity: 7 },
+      { name: "Mighty Freya", popularity: 6 },
+      { name: "Big Bus X-Mas Extreme", popularity: 5 },
+      { name: "Eternal Empress", popularity: 4 },
+      { name: "Freeze Time", popularity: 3 },
+      { name: "Himalayan Wild", popularity: 2 },
+      { name: "Wolf Gold Ultimate", popularity: 1 },
+      { name: "Melanoir", popularity: 0 },
+      { name: "Candy Corner", popularity: 0 },
+      { name: "Seven Clovers of Fortune", popularity: 0 },
+      { name: "Connect Collect", popularity: 0 },
+      { name: "Fantastic Freeze Beans", popularity: 0 },
+      { name: "Vampy Party", popularity: 0 },
+      { name: "Big Bus Halloween", popularity: 0 },
+      { name: "Release the Kraken Mega Waste", popularity: 0 },
+      { name: "Fortune Heat and Roll", popularity: 0 },
+      { name: "888 Gold", popularity: 0 },
+      { name: "The Dog House Monthly Crew", popularity: 0 },
+      { name: "Anime Mega Mega Waste", popularity: 0 },
+      { name: "Budge Blitz", popularity: 0 },
+      { name: "High Flyer", popularity: 0 }
+    ];
 
-    const allSlots = providers["Pragmatic Play"];
-    const slotHistories = {}, slotSpinHistories = {}, charts = {};
-    const spinTypes = ["Buy Spin", "Normal Spin"];
-    let isUpdating = true;
+    // Sort descending by popularity before rendering
+    slotGamesWithPopularity.sort((a, b) => b.popularity - a.popularity);
 
-    const slotScatterData = {};
-    allSlots.forEach(slot => {
-      slotHistories[slot] = [];
-      slotSpinHistories[slot] = [];
-      slotScatterData[slot] = {
-        lastBetAmount: 0,
-        lastScatterHit: false,
-        lastScatterBet: null,
-        normalSpinsSinceScatter: 0,
-        highestWin: 0,
-      };
-    });
-
-    function getRandomWinRate() {
-      return +(Math.random() * 100).toFixed(2);
-    }
-    function getRandomSpinType() {
-      return spinTypes[Math.floor(Math.random() * spinTypes.length)];
-    }
-    function didScatterHit(spinType) {
-      if (spinType === "Normal Spin") {
-        return Math.random() < 0.20;
-      }
-      return false;
-    }
-    function getRandomBetAmount() {
-      return Math.floor(Math.random() * 6000) + 1;
-    }
-    function formatTime() {
-      return new Date().toLocaleTimeString('en-US',{hour12:false});
-    }
-    function movingAverage(arr) {
-      const n = Math.min(arr.length, 5);
-      const sum = arr.slice(0, n).reduce((a, v) => a + v.rate, 0);
-      return +(sum / n).toFixed(2);
-    }
-
-    // New function: Predict win rate based on recent trend
-    function predictWinRate(history) {
-      if (history.length < 3) return movingAverage(history);
-
-      const last = history[0].rate;
-      const prev = history[1].rate;
-      const prev2 = history[2].rate;
-
-      const trend = (last - prev) + (prev - prev2);
-      const avg = movingAverage(history);
-
-      const factor = 0.6; // sensitivity factor
-      let prediction = avg + trend * factor;
-
-      prediction = Math.min(100, Math.max(0, prediction));
-
-      return prediction;
-    }
-
-    function getRecommendedBetAmount(predictedRate, slotName) {
-      // Assign max bet amounts based on slot (example values, adjust as needed)
-      const maxBetMap = {
-        "Irish Crown": 5000,
-        "Gates of Olympus Super Scatter": 6000,
-        "Mahjong Wins Super Scatter": 4000,
-        "Wild West Gold Blazing Bounty": 5500,
-        "Gates of Hades": 4500,
-        "The Dog House – Royal Hunt": 4000,
-        "Book of Monsters": 3500,
-        "Big Bass Bonanza 1000": 6000,
-        "Starlight Princess 1000": 6500,
-        "Gates of Olympus 1000": 6000,
-        "Sugar Rush 1000": 5800,
-        "Sweet Bonanza 1000": 6200,
-        "Wisdom of Athena 1000": 5000,
-        "Gates of Olympus Xmas 1000": 6000,
-        "Hades Inferno 1000": 5700,
-        "Lucky Tiger 1000": 5000,
-        "Sweet Bonanza": 4000,
-        "Sugar Rush": 3500,
-        "Gates of Olympus": 5500,
-        "Starlight Princess": 6000,
-        "Big Bass Splash": 3000,
-        "Fruit Party": 3200,
-        "Wild West Gold": 5000,
-        "The Dog House": 3500,
-        "Power of Thor Megaways": 4800,
-        "Joker’s Jewels": 3000,
-        "Floating Dragon": 3000,
-        "Madame Destiny Megaways": 5200,
-        "John Hunter and the Tomb of the Scarab Queen": 4000,
-        "Chilli Heat": 3200,
-        "Buffalo King Megaways": 5500,
-        "Mustang Gold": 4500,
-        "5 Lions": 2800,
-        "Aztec Gems": 2800,
-        "Pyramid Bonanza": 2500,
-        "Lucky Lightning": 2300
-      };
-
-      const maxBet = maxBetMap[slotName] || 3000;
-
-      // Bet amount is proportional to predicted win rate (from 0 to maxBet)
-      return Math.round((predictedRate / 100) * maxBet);
+    function randomFloat(min, max) {
+      return (Math.random() * (max - min) + min).toFixed(2);
     }
 
-    function destroyCharts() {
-      Object.values(charts).forEach(c => c && c.destroy());
-      Object.keys(charts).forEach(k => delete charts[k]);
+    function generateFakeHistory() {
+      return Array.from({ length: 10 }, () => parseFloat(randomFloat(0, 100)));
     }
 
-    function renderSlots() {
-      const container = document.getElementById("slotsContainer");
-      container.innerHTML = "";
-      destroyCharts();
-      const search = document.getElementById("searchInput").value.toLowerCase();
+    function recommendBet(prediction) {
+      if (prediction > 80) return "High Bet";
+      if (prediction > 60) return "Medium Bet";
+      if (prediction > 40) return "Low Bet";
+      return "Skip Bet";
+    }
 
-      allSlots.filter(s => s.toLowerCase().includes(search))
-        .forEach(slot => {
-          const h = slotHistories[slot];
-          if (!h.length) return;
+    function recommendBetAmount(rate) {
+      if (rate > 80) return "₱1000 Max";
+      if (rate > 70) return "₱500–₱999";
+      if (rate > 50) return "₱200–₱499";
+      if (rate > 30) return "₱50–₱199";
+      return "₱0–₱49";
+    }
 
-          const avg = movingAverage(h);
-          const prediction = predictWinRate(h);
-          const predictionStr = prediction.toFixed(2);
-          const spin = slotSpinHistories[slot][0];
-          const time = h[0].time;
-          const advice = avg > 50 ? {cls:"good", txt:"Good time to bet!"}
-                                  : {cls:"wait", txt:"Better to wait."};
-          const rateColor = avg > 50 ? "#0f0" : "#f55";
+    function recommendSpinType(avg, prediction) {
+      if (prediction > 75 || (prediction - avg) > 15) return "Buy Spin (📈 High Spike)";
+      if (prediction > 50) return "Normal Spin (Safe)";
+      return "Avoid Spin (⚠️ Low Odds)";
+    }
 
-          // Determine recommended spin type based on avg win rate
-          let recommendedSpin;
-          if (avg > 65) {
-            recommendedSpin = "Buy Spin";
-          } else if (avg >= 40) {
-            recommendedSpin = "Normal Spin";
-          } else {
-            recommendedSpin = "Do Not Spin";
-          }
-
-          const recommendedBet = getRecommendedBetAmount(prediction, slot);
-
-          const div = document.createElement("div");
-          div.className = "slot-card";
-          div.innerHTML = `
-            <h2>${slot} (Pragmatic Play)</h2>
-            <div class="winrate" style="color:${rateColor}">
-              Moving Avg Win Rate: ${avg}% (last: ${h[0].rate}% at ${time})
-            </div>
-            <div class="prediction">
-              Predicted Win Rate (next 30s): ${predictionStr}%
-            </div>
-            <div>
-              <div>Last Spin Type: <b>${spin}</b></div>
-              <div class="spin-type">Recommended Spin Type: <b>${recommendedSpin}</b></div>
-              <div class="spin-type">Recommended Bet Amount: <b>₱${recommendedBet}</b></div>
-            </div>
-            <div class="advice ${advice.cls}">${advice.txt}</div>
-            <div class="progress-bar" title="Win rate bar">
-              <div class="fill" style="width:${avg}%"></div>
-            </div>
-            <canvas id="chart_${slot.replace(/\s/g, '')}" aria-label="Win rate chart for ${slot}" role="img"></canvas>
-          `;
-          container.appendChild(div);
-
-          // Create chart
-          const ctx = document.getElementById(`chart_${slot.replace(/\s/g, '')}`).getContext('2d');
-          charts[slot] = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: h.map(d => d.time).reverse(),
-              datasets: [{
-                label: 'Win Rate %',
-                data: h.map(d => d.rate).reverse(),
-                borderColor: '#0f0',
-                backgroundColor: 'rgba(0,255,0,0.2)',
-                fill: true,
-                tension: 0.3,
-                pointRadius: 3,
-              }]
+    function createChart(ctx, data) {
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.map((_, i) => i + 1),
+          datasets: [{
+            label: 'Win Rate %',
+            data: data,
+            borderColor: '#00ffc3',
+            backgroundColor: 'rgba(0,255,195,0.2)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 3,
+            pointBackgroundColor: '#00ffc3',
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              min: 0,
+              max: 100,
+              ticks: { color: '#00ffc3' },
+              grid: { color: '#333' }
             },
-            options: {
-              animation: false,
-              scales: {
-                y: { min: 0, max: 100, ticks: { stepSize: 10 } },
-                x: { display: false }
-              },
-              plugins: { legend: { display: false } },
-              maintainAspectRatio: false,
+            x: {
+              ticks: { color: '#00ffc3' },
+              grid: { color: '#333' }
             }
-          });
-        });
-    }
-
-    function updateData() {
-      if (!isUpdating) return;
-      const now = formatTime();
-      document.getElementById("lastUpdated").textContent = `Last updated: ${now}`;
-
-      allSlots.forEach(slot => {
-        const rate = getRandomWinRate();
-        const spinType = getRandomSpinType();
-
-        // Update histories (keep last 10 records)
-        slotHistories[slot].unshift({rate, time: now});
-        if (slotHistories[slot].length > 10) slotHistories[slot].pop();
-
-        slotSpinHistories[slot].unshift(spinType);
-        if (slotSpinHistories[slot].length > 1) slotSpinHistories[slot].pop();
-
-        // Update scatter and other data
-        const scatterHit = didScatterHit(spinType);
-        const scatterData = slotScatterData[slot];
-        scatterData.lastBetAmount = getRandomBetAmount();
-        scatterData.lastScatterHit = scatterHit;
-
-        if (scatterHit) {
-          scatterData.lastScatterBet = scatterData.lastBetAmount;
-          scatterData.normalSpinsSinceScatter = 0;
-        } else {
-          scatterData.normalSpinsSinceScatter++;
-        }
-        if (rate > scatterData.highestWin) {
-          scatterData.highestWin = rate;
+          },
+          plugins: { legend: { labels: { color: '#00ffc3' } } },
+          responsive: true,
+          maintainAspectRatio: false
         }
       });
-
-      renderSlots();
     }
 
-    document.getElementById("searchInput").addEventListener("input", renderSlots);
-    document.getElementById("toggleUpdatesBtn").addEventListener("click", () => {
-      isUpdating = !isUpdating;
-      document.getElementById("toggleUpdatesBtn").textContent = isUpdating ? "Pause Updates ⏸️" : "Resume Updates ▶️";
-    });
+    const container = document.getElementById("slotsContainer");
+    const searchInput = document.getElementById("searchInput");
+    const searchButton = document.getElementById("searchButton");
 
-    // Initial fill of histories with dummy data
-    allSlots.forEach(slot => {
-      for(let i=0; i<7; i++){
-        slotHistories[slot].push({
-          rate: +(Math.random()*100).toFixed(2),
-          time: formatTime()
-        });
+    function renderSlots(filteredSlots) {
+      container.innerHTML = '';
+      filteredSlots.forEach(slotObj => {
+        const slot = slotObj.name;
+        const history = generateFakeHistory();
+        const avg = (history.reduce((a, b) => a + b) / history.length).toFixed(2);
+        const prediction = randomFloat(0, 100);
+        const betAdvice = recommendBet(prediction);
+        const colorClass = prediction > 70 ? "green" : prediction > 40 ? "yellow" : "red";
+
+        const slotCard = document.createElement("div");
+        slotCard.className = "slot-card";
+        slotCard.innerHTML = `
+          <h2>${slot}</h2>
+          <div class="stat">📊 Moving Avg Win Rate: <span class="${colorClass}">${avg}%</span></div>
+          <div class="stat">🔮 Predicted Win Rate (next 30s): <span class="${colorClass}">${prediction}%</span></div>
+          <div class="stat">💡 Recommended Bet: <b>${betAdvice}</b></div>
+          <div class="stat">💸 Recommended Amount: <b>${recommendBetAmount(prediction)}</b></div>
+          <div class="stat">🎰 Spin Type: <b>${recommendSpinType(avg, prediction)}</b></div>
+          <canvas class="graph-canvas" id="chart-${slot.replace(/\s+/g, '')}" height="120"></canvas>
+        `;
+
+        container.appendChild(slotCard);
+
+        const canvas = document.getElementById(`chart-${slot.replace(/\s+/g, '')}`);
+        createChart(canvas, history);
+      });
+    }
+
+    function filterSlots() {
+      const query = searchInput.value.toLowerCase().trim();
+      if (!query) {
+        renderSlots(slotGamesWithPopularity);
+        return;
       }
-      slotSpinHistories[slot].push(getRandomSpinType());
+      const filtered = slotGamesWithPopularity.filter(game =>
+        game.name.toLowerCase().includes(query)
+      );
+      renderSlots(filtered);
+    }
+
+    searchButton.addEventListener("click", filterSlots);
+
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        filterSlots();
+      }
     });
 
-    renderSlots();
-    setInterval(updateData, 30000);
+    // Initial render all slots sorted by popularity
+    renderSlots(slotGamesWithPopularity);
   </script>
 </body>
 </html>
